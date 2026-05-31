@@ -14,7 +14,8 @@ import {
   Mail,
   TrendingUp,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 import { supabase, BlogPost, isSupabaseConfigured } from '../lib/supabase';
 import DOMPurify from 'dompurify';
@@ -25,6 +26,41 @@ export default function BlogPostPage() {
   const [trending, setTrending] = useState<BlogPost[]>([]);
   const [related, setRelated] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const shareOnFacebook = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer,width=600,height=400');
+  };
+
+  const shareOnWhatsApp = () => {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(`Check out this solar insight: "${post?.title || ''}"`);
+    window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const shareLink = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post?.title || 'LAS Solar Insight',
+          text: post?.category || 'Solar Intelligence',
+          url: window.location.href,
+        });
+        return;
+      } catch (err) {
+        console.log('Native share failed, using fallback copy to clipboard', err);
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
 
   useEffect(() => {
     fetchPost();
@@ -203,15 +239,41 @@ export default function BlogPostPage() {
             {/* Social Share Bar */}
             <div className="mt-16 pt-8 border-t border-slate-100 flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-widest text-black">Share this Insight</span>
-              <div className="flex gap-4">
-                <button className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all">
+              <div className="flex items-center gap-4">
+                {copied && (
+                  <motion.span 
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100"
+                  >
+                    Link Copied!
+                  </motion.span>
+                )}
+                <button 
+                  onClick={shareOnFacebook}
+                  title="Share on Facebook"
+                  className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all cursor-pointer"
+                >
                   <Facebook size={18} />
                 </button>
-                <button className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all">
+                <button 
+                  onClick={shareOnWhatsApp}
+                  title="Share via WhatsApp"
+                  className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all cursor-pointer"
+                >
                   <MessageCircle size={18} />
                 </button>
-                <button className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all">
-                  <Share2 size={18} />
+                <button 
+                  onClick={shareLink}
+                  title="Copy Link / Share"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    copied 
+                      ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                      : 'bg-slate-50 text-black hover:bg-black hover:text-white'
+                  }`}
+                >
+                  {copied ? <Check size={18} className="animate-fade-in" /> : <Share2 size={18} />}
                 </button>
               </div>
             </div>
