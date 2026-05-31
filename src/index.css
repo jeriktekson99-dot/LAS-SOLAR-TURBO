@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", sans-serif;
+
+  --color-app-purple: #8A2BE2;
+  --color-app-black: #000000;
+  --color-black-light: #1A1A1A;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply tracking-tight font-bold text-black;
+  }
+
+  body {
+    @apply text-black bg-white;
+  }
+}
+
+.rich-text-content {
+  @apply prose prose-lg max-w-none text-black/80 leading-relaxed break-words;
+}
+
+.rich-text-content h2 {
+  @apply font-display font-black text-black text-3xl mt-12 mb-6 uppercase tracking-tight;
+}
+
+.rich-text-content h3 {
+  @apply font-display font-bold text-black text-2xl mt-10 mb-5 uppercase tracking-tight;
+}
+
+.rich-text-content p {
+  @apply mb-6 font-light;
+}
+
+.rich-text-content blockquote {
+  @apply border-l-8 border-app-purple bg-slate-50 p-8 rounded-r-3xl italic text-xl text-black/80 my-10 font-light;
+}
+
+.rich-text-content ul {
+  @apply list-disc list-outside mb-8 space-y-2 ml-6;
+}
+
+.rich-text-content ol {
+  @apply list-decimal list-outside mb-8 space-y-2 ml-6;
+}
+
+.rich-text-content li {
+  @apply pl-2 leading-relaxed;
+}
+
+.rich-text-content li > p {
+  @apply m-0 inline;
+}
+
+.rich-text-content hr {
+  @apply border-t-2 border-slate-100 my-12;
+}
+
+.rich-text-content a {
+  @apply text-app-purple font-bold underline hover:text-black transition-colors;
+}
+
+.rich-text-content img {
+  @apply rounded-[2.5rem] shadow-2xl mx-auto my-12 max-h-[600px] object-cover;
+}
+
+.modern-glass {
+  @apply bg-black text-white border-b border-white/10 shadow-lg;
+}
+
+.btn-primary {
+  @apply bg-app-purple text-white font-bold px-6 py-3 rounded-full hover:bg-black hover:text-white transition-all duration-300 shadow-md hover:shadow-lg border border-transparent hover:border-app-purple;
+}
+
+.btn-secondary {
+  @apply bg-black text-white font-bold px-6 py-3 rounded-full hover:bg-app-purple transition-all duration-300 shadow-md border border-white/20;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+@keyframes marquee-ltr {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-marquee-ltr {
+  display: flex;
+  width: max-content;
+  animation: marquee-ltr 25s linear infinite;
+}
+
+.animate-marquee-ltr:hover {
+  animation-play-state: paused;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
