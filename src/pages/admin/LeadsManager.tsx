@@ -147,7 +147,7 @@ export default function AdminLeadsManager() {
           const { error } = await supabase
             .from('leads')
             .delete()
-            .neq('id', 'placeholder-non-existent-id-to-delete-all');
+            .neq('id', '00000000-0000-0000-0000-000000000000');
           if (error) throw error;
           setLeads([]);
         }

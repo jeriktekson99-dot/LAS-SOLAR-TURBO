@@ -27,6 +27,8 @@ export default function AdminArchiveManager() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'Portfolio' | 'Blog'} | null>(null);
+  const [itemToRestore, setItemToRestore] = useState<ArchivedItem | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -71,19 +73,24 @@ export default function AdminArchiveManager() {
     }
   };
 
-  const handleRestore = async (id: string, type: 'Portfolio' | 'Blog') => {
+  const handleRestoreConfirm = async () => {
+    if (!itemToRestore) return;
+    setIsRestoring(true);
     try {
-      const table = type === 'Portfolio' ? 'projects' : 'blog_posts';
+      const table = itemToRestore.type === 'Portfolio' ? 'projects' : 'blog_posts';
       const { error } = await supabase
         .from(table)
         .update({ is_deleted: false })
-        .eq('id', id);
+        .eq('id', itemToRestore.id);
 
       if (error) throw error;
-      setItems(items.filter(i => i.id !== id));
+      setItems(items.filter(i => i.id !== itemToRestore.id));
+      setItemToRestore(null);
     } catch (err: any) {
       console.error('Error restoring item:', err);
       alert('Failed to restore: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -212,7 +219,7 @@ export default function AdminArchiveManager() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRestore(item.id, item.type);
+                            setItemToRestore(item);
                           }}
                           className="p-3 bg-slate-50 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all flex items-center gap-2"
                         >
@@ -255,6 +262,17 @@ export default function AdminArchiveManager() {
         isDeleting={isDeleting}
         title="Permanent Delete"
         message="🚨 DANGER: You are about to permanently delete this item. This action cannot be reversed and the data will be lost forever."
+      />
+
+      <DeleteConfirmationModal
+        isOpen={!!itemToRestore}
+        onClose={() => setItemToRestore(null)}
+        onConfirm={handleRestoreConfirm}
+        isDeleting={isRestoring}
+        type="restore"
+        title="Restore Archived Item"
+        message={`Are you sure you want to restore the item "${itemToRestore?.title}"? This will recover it and make it live on the main website.`}
+        confirmLabel="Restore"
       />
     </div>
   );

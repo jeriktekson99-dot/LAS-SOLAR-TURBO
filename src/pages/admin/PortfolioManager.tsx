@@ -62,11 +62,10 @@ export default function AdminPortfolioManager() {
         if (!isSupabaseConfigured) {
           setProjects([]);
         } else {
-          const activeIds = projects.map(p => p.id);
           const { error } = await supabase
             .from('projects')
             .update({ is_deleted: true })
-            .in('id', activeIds);
+            .eq('is_deleted', false);
           if (error) throw error;
           setProjects([]);
         }

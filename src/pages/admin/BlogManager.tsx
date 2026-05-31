@@ -64,11 +64,10 @@ export default function AdminBlogManager() {
         if (!isSupabaseConfigured) {
           setPosts([]);
         } else {
-          const activeIds = posts.map(p => p.id);
           const { error } = await supabase
             .from('blog_posts')
             .update({ is_deleted: true })
-            .in('id', activeIds);
+            .eq('is_deleted', false);
           if (error) throw error;
           setPosts([]);
         }

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertTriangle, X, Trash2, Loader2 } from 'lucide-react';
+import { AlertTriangle, X, Trash2, Loader2, RotateCcw } from 'lucide-react';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
@@ -8,7 +8,7 @@ interface DeleteConfirmationModalProps {
   title: string;
   message: string;
   isDeleting?: boolean;
-  type?: 'delete' | 'archive';
+  type?: 'delete' | 'archive' | 'restore';
   confirmLabel?: string;
 }
 
@@ -23,6 +23,7 @@ export default function DeleteConfirmationModal({
   confirmLabel
 }: DeleteConfirmationModalProps) {
   const isDanger = type === 'delete' || type === 'archive';
+  const isRestore = type === 'restore';
   
   return (
     <AnimatePresence>
@@ -42,12 +43,16 @@ export default function DeleteConfirmationModal({
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             className="bg-white rounded-[2rem] shadow-2xl relative z-10 max-w-md w-full overflow-hidden border border-slate-100"
           >
-            <div className={`h-2 ${isDanger ? 'bg-red-500' : 'bg-amber-500'}`} />
+            <div className={`h-2 ${isRestore ? 'bg-green-500' : (isDanger ? 'bg-red-500' : 'bg-amber-500')}`} />
             
             <div className="p-8">
               <div className="flex justify-between items-start mb-6">
-                <div className={`p-4 rounded-2xl ${isDanger ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
-                  <AlertTriangle size={24} />
+                <div className={`p-4 rounded-2xl ${
+                  isRestore 
+                    ? 'bg-green-50 text-green-600' 
+                    : (isDanger ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600')
+                }`}>
+                  {isRestore ? <RotateCcw size={24} /> : <AlertTriangle size={24} />}
                 </div>
                 <button 
                   onClick={onClose}
@@ -76,17 +81,19 @@ export default function DeleteConfirmationModal({
                   onClick={onConfirm}
                   disabled={isDeleting}
                   className={`flex-1 px-6 py-4 rounded-2xl flex items-center justify-center gap-2 text-white font-bold text-sm uppercase tracking-widest transition-all shadow-lg ${
-                    isDanger 
-                      ? 'bg-red-500 hover:bg-red-600 shadow-red-200' 
-                      : 'bg-amber-500 hover:bg-amber-600 shadow-amber-200'
+                    isRestore
+                      ? 'bg-green-600 hover:bg-green-700 shadow-green-200'
+                      : (isDanger 
+                          ? 'bg-red-500 hover:bg-red-600 shadow-red-200' 
+                          : 'bg-amber-500 hover:bg-amber-600 shadow-amber-200')
                   } disabled:opacity-50`}
                 >
                   {isDeleting ? (
                     <Loader2 size={18} className="animate-spin" />
                   ) : (
                     <>
-                      <Trash2 size={18} />
-                      {confirmLabel || (type === 'delete' ? 'Delete' : 'Archive')}
+                      {isRestore ? <RotateCcw size={18} /> : <Trash2 size={18} />}
+                      {confirmLabel || (isRestore ? 'Restore' : (type === 'delete' ? 'Delete' : 'Archive'))}
                     </>
                   )}
                 </button>

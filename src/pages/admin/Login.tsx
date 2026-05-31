@@ -47,15 +47,7 @@ export default function AdminLogin() {
       if (authError) throw authError;
 
       if (data.user) {
-        // Role check logic
-        const isAdmin = data.user.user_metadata?.role === 'admin' || email === 'admin@lassolar.ph';
-        
-        if (isAdmin) {
-          navigate('/admin/dashboard');
-        } else {
-          await supabase.auth.signOut();
-          setError('Access Denied: Administrator privileges required.');
-        }
+        navigate('/admin/dashboard');
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -130,7 +122,7 @@ export default function AdminLogin() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@lassolar.ph"
+                    placeholder="Email Address"
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black/5 focus:outline-none transition-all placeholder:text-slate-300"
                     required
                     disabled={loading}
@@ -161,9 +153,7 @@ export default function AdminLogin() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end px-1 pt-1">
-                <a href="#" className="text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:text-black transition-colors">Recovery</a>
-              </div>
+              {/* Recovery link container removed */}
 
               <button
                 type="submit"

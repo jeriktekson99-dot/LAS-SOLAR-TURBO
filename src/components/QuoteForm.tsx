@@ -204,13 +204,18 @@ const generatePDFForForm = (name: string, email: string, phone: string, billBrac
   doc.setFontSize(10);
   doc.text('1. Core Summary & Calculated Input Parameters', 21, startYValue);
   
+  const cleanBillBracket = billBracket
+    .replace(/₱/g, 'PHP ')
+    .replace(/[–—]/g, '-')
+    .trim();
+
   autoTable(doc, {
     startY: startYValue + 3,
     margin: { left: 15, right: 15 },
     styles: { fontSize: 8, font: 'helvetica', cellPadding: 2.5, lineColor: [241, 245, 249], lineWidth: 0.5 },
     head: [['Assessment Metric', 'Strategic Target Valuation']],
     body: [
-       ['Avg. Monthly Bill Range (Form Chosen)', `${billBracket}`],
+       ['Avg. Monthly Bill Range (Form Chosen)', `${cleanBillBracket}`],
        ['Assessed Midpoint Bill Factor', `PHP ${billVal.toLocaleString()}`],
        ['Tariff / Electricity Rate', `PHP 15/kWh`],
        ['Recommended Solar Ingress Size', `${results.targetSystemSizeKwp.toFixed(2)} kWp`],
