@@ -2,13 +2,13 @@
   <!-- Premium rounded black square background -->
   <rect width="512" height="512" rx="112" fill="#000000" />
   
-  <!-- Outer glowing sun aura or crown (subtle backup vector that enhances the logo) -->
+  <!-- Outer glowing sun aura or crown -->
   <circle cx="256" cy="256" r="210" fill="none" stroke="#8A2BE2" stroke-width="4" opacity="0.15" />
   <circle cx="256" cy="256" r="230" fill="none" stroke="#8A2BE2" stroke-width="2" opacity="0.1" />
 
-  <!-- Main logo image embedded directly matching the website's active logo -->
+  <!-- Main premium logo image embedded directly matching the user's specific Google Drive file -->
   <image 
-    href="https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO" 
+    href="https://lh3.googleusercontent.com/d/1RNC2q3KnEAg9vFXMTEQNFiuVyNCvPHJc" 
     x="48" 
     y="48" 
     width="416" 
