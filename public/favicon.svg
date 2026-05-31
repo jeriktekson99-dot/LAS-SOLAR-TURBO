@@ -1,48 +1,154 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <!-- Background Circle Gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Gradients matching the user's beautiful logo colors -->
+    <linearGradient id="purpleCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#8A2BE2" />
-      <stop offset="100%" stop-color="#4B0082" />
+      <stop offset="50%" stop-color="#00A2E8" />
+      <stop offset="100%" stop-color="#00E5FF" />
+    </linearGradient>
+
+    <linearGradient id="panelGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4B0082" />
+      <stop offset="40%" stop-color="#8A2BE2" />
+      <stop offset="80%" stop-color="#00A2E8" />
+      <stop offset="100%" stop-color="#00E5FF" />
+    </linearGradient>
+
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5FF" />
+      <stop offset="100%" stop-color="#0066FF" />
+    </linearGradient>
+
+    <linearGradient id="plugGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0055ff" />
+      <stop offset="100%" stop-color="#00d5ff" />
     </linearGradient>
     
-    <!-- Solar Core Glow -->
-    <linearGradient id="solarGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FF4500" />
-      <stop offset="50%" stop-color="#FFA500" />
-      <stop offset="100%" stop-color="#FFD700" />
-    </linearGradient>
-    
-    <!-- White Turbo Gloss -->
-    <linearGradient id="glossGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0" />
-    </linearGradient>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
 
-  <!-- High-contrast rounded background -->
-  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <!-- Clear transparent background, suitable for any browser tab theme -->
+  
+  <g transform="translate(10, 20) scale(0.95)">
+    <!-- 1. Background Sun with Rays (behind solar panel) -->
+    <g opacity="0.85">
+      <circle cx="160" cy="270" r="45" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="2 4" />
+      <!-- Ray Lines -->
+      <line x1="120" y1="285" x2="65" y2="305" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+      <line x1="115" y1="265" x2="55" y2="275" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+      <line x1="118" y1="245" x2="60" y2="245" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+      <line x1="122" y1="225" x2="75" y2="210" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+      <line x1="130" y1="208" x2="95" y2="180" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+    </g>
 
-  <!-- Outer Solar Corona/Rays -->
-  <circle cx="256" cy="256" r="150" fill="none" stroke="url(#solarGrad)" stroke-width="12" stroke-dasharray="10 15" stroke-linecap="round" opacity="0.8">
-    <animateTransform 
-      attributeName="transform" 
-      type="rotate" 
-      from="0 256 256" 
-      to="360 256 256" 
-      dur="30s" 
-      repeatCount="indefinite" />
-  </circle>
+    <!-- 2. The Main Tilted Gradient Frame -->
+    <!-- Tilted border structure from top-left to bottom-right -->
+    <path d="M 30 180 L 460 50 L 390 230" fill="none" stroke="url(#purpleCyanGrad)" stroke-width="5" stroke-linecap="round" />
+    <path d="M 45 230 L 15 170" fill="none" stroke="url(#purpleCyanGrad)" stroke-width="5" stroke-linecap="round" />
+    <path d="M 390 230 L 370 235" fill="none" stroke="url(#purpleCyanGrad)" stroke-width="5" stroke-linecap="round" />
 
-  <!-- Turbo Bolt & Sun Core -->
-  <g transform="translate(136, 116)">
-    <!-- Main Sun Core -->
-    <path d="M120 20 C180 20, 220 60, 220 120 C220 180, 180 220, 120 220 C60 220, 20 180, 20 120 C20 60, 60 20, 120 20 Z" fill="url(#solarGrad)" />
+    <!-- 3. BRAND NAME TEXTS -->
+    <!-- "LAS" - Elegant Outlined Retro Font -->
+    <g transform="rotate(-15 150 180)">
+      <text x="65" y="165" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="76" fill="none" stroke="#2c3e50" stroke-width="5" letter-spacing="4">LAS</text>
+      <text x="65" y="165" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="76" fill="#F8FAFC" letter-spacing="4">LAS</text>
+    </g>
 
-    <!-- Turbo Energy Bolt Lightning Cutaway -->
-    <polygon points="130,30 50,150 110,150 90,250 190,110 125,110" fill="#FFFFFF" filter="drop-shadow(0px 4px 12px rgba(255, 69, 0, 0.5))" />
+    <!-- "TURBO" - Thick Bold White blocks -->
+    <g transform="rotate(-15 310 120)">
+      <!-- Three Gradient Blocks above Turbo -->
+      <rect x="180" y="25" width="22" height="10" fill="#8A2BE2" rx="2" />
+      <rect x="210" y="25" width="22" height="10" fill="#00A2E8" rx="2" />
+      <rect x="240" y="25" width="22" height="10" fill="#00E5FF" rx="2" />
+
+      <!-- Text "TURBO" -->
+      <text x="110" y="115" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="82" fill="none" stroke="#2c3e50" stroke-width="7">TURBO</text>
+      <text x="110" y="115" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="82" fill="#FFFFFF">TURBO</text>
+      
+      <!-- "SOLAR" - Double structured -->
+      <text x="215" y="165" font-family="'Montserrat', sans-serif" font-weight="800" font-size="34" fill="none" stroke="#2c3e50" stroke-width="4" letter-spacing="8">SOLAR</text>
+      <text x="215" y="165" font-family="'Montserrat', sans-serif" font-weight="800" font-size="34" fill="#FFFFFF" letter-spacing="8">SOLAR</text>
+    </g>
+
+    <!-- 4. LIGHTBULB LOGO WITH THUNDERBOLT (Above solar panel) -->
+    <g transform="translate(182, 175) scale(0.7)">
+      <!-- Lightbulb outline contour -->
+      <path d="M 30 40 C 30 10, 70 10, 70 40 C 70 55, 60 62, 57 70 L 57 80 L 43 80 L 43 70 C 40 62, 30 55, 30 40 Z" fill="#FFFFFF" stroke="#475569" stroke-width="3.5" />
+      <!-- Cloud with lightning inside -->
+      <path d="M 40 45 C 38 42, 41 37, 45 37 C 47 34, 53 34, 55 37 C 59 37, 62 41, 60 45 Z" fill="url(#cloudGrad)" />
+      <!-- Lightning bolt inside bulb -->
+      <polygon points="50,42 45,52 49,52 47,60 55,49 51,49" fill="#FFFFFF" />
+      <!-- Bulb thread & rays -->
+      <rect x="45" y="80" width="10" height="4" fill="#64748B" rx="1" />
+      <rect x="46" y="85" width="8" height="4" fill="#475569" rx="1"/>
+      <path d="M 20 40 L 10 40 M 24 24 L 16 16 M 50 18 L 50 8 M 76 24 L 84 16 M 80 40 L 90 40" stroke="#8A2BE2" stroke-width="2.5" stroke-linecap="round" />
+    </g>
+
+    <!-- 5. CENTRAL 3D TILTED SOLAR PANEL -->
+    <g transform="translate(180, 210)">
+      <!-- Outer tilted bezel -->
+      <polygon points="10,130 115,20 220,105 130,220" fill="#2e1065" />
+      <polygon points="12,126 113,22 216,103 128,214" fill="url(#panelGrad)" stroke="#FFFFFF" stroke-width="3" />
+      <!-- Grid segments -->
+      <!-- Vertical dividing lines (converging in perspective) -->
+      <line x1="37" y1="100" x2="138" y2="42" stroke="#FFFFFF" stroke-width="1.5" />
+      <line x1="62" y1="122" x2="164" y2="64" stroke="#FFFFFF" stroke-width="1.5" />
+      <line x1="88" y1="145" x2="188" y2="85" stroke="#FFFFFF" stroke-width="1.5" />
+      <line x1="112" y1="168" x2="212" y2="108" stroke="#FFFFFF" stroke-width="1.5" />
+      <!-- Horizontal lines (slanted parallel) -->
+      <line x1="90" y1="41" x2="135" y2="149" stroke="#FFFFFF" stroke-width="1.5" />
+      <line x1="65" y1="62" x2="110" y2="171" stroke="#FFFFFF" stroke-width="1.5" />
+      <line x1="41" y1="82" x2="85" y2="191" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" />
+      <line x1="113" y1="21" x2="159" y2="129" stroke="#FFFFFF" stroke-width="1.5" />
+      <line x1="137" y1="41" x2="182" y2="150" stroke="#FFFFFF" stroke-width="1.5" />
+    </g>
+
+    <!-- 6. WIND TURBINE (To the right of solar panel) -->
+    <g transform="translate(290, 205)">
+      <!-- Tower -->
+      <polygon points="38,200 42,200 41,80 39,80" fill="#4B0082" />
+      <polygon points="38.5,198 41.5,198 40.5,82 39.5,82" fill="#00E5FF" />
+      <!-- Nacelle center point -->
+      <circle cx="40" cy="80" r="5" fill="#4B0082" />
+      <circle cx="40" cy="80" r="3" fill="#FFFFFF" />
+      <!-- Blade 1 (Up-Left) -->
+      <path d="M 40 80 Q 25 50 12 30 Q 25 45 40 80" fill="#00A2E8" stroke="#FFFFFF" stroke-width="0.5" />
+      <!-- Blade 2 (Up-Right) -->
+      <path d="M 40 80 Q 65 60 88 52 Q 65 70 40 80" fill="#00A2E8" stroke="#FFFFFF" stroke-width="0.5" />
+      <!-- Blade 3 (Downwards) -->
+      <path d="M 40 80 Q 42 115 45 150 Q 38 115 40 80" fill="#00A2E8" stroke="#FFFFFF" stroke-width="0.5" />
+    </g>
+
+    <!-- 7. ECO CHARGER WITH LEAVES ICON (Bottom Right) -->
+    <g transform="translate(350, 316) scale(0.75)">
+      <!-- Station outline panel (high quality) -->
+      <path d="M 15 20 L 75 20 C 85 20, 85 30, 85 45 L 85 110 L 15 110 Z" fill="none" stroke="#0055ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M 15 20 L 75 20 C 85 20, 85 30, 85 45 L 85 110 L 15 110 Z" fill="#FFFFFF" />
+      
+      <!-- Leaf decoration inside panel -->
+      <path d="M 25 80 Q 15 50, 45 50 Q 55 75, 25 80 Z" fill="url(#plugGrad)" opacity="0.9" />
+      <!-- Little Leaf stem -->
+      <path d="M 25 80 Q 40 60, 52 75 Q 40 85, 42 95 Z" fill="url(#plugGrad)" opacity="0.7" />
+
+      <!-- Electrical Wire & Plug -->
+      <!-- Curvy cable going up-right then down-right -->
+      <path d="M 85 80 Q 115 80 110 115 Q 105 135, 125 130" fill="none" stroke="#0055ff" stroke-width="4" stroke-linecap="round" />
+      <!-- Plug Body -->
+      <rect x="125" y="118" width="18" height="24" rx="4" fill="#0055ff" />
+      <rect x="128" y="121" width="12" height="18" rx="2" fill="#FFFFFF" />
+      <!-- Prongs -->
+      <line x1="143" y1="124" x2="155" y2="124" stroke="#0055ff" stroke-width="4.5" stroke-linecap="round" />
+      <line x1="143" y1="136" x2="155" y2="136" stroke="#0055ff" stroke-width="4.5" stroke-linecap="round" />
+
+      <!-- Flat Pedestal base -->
+      <rect x="5" y="110" width="85" height="14" rx="3" fill="#0055ff" />
+      <rect x="10" y="113" width="75" height="4" rx="1" fill="#FFFFFF" />
+    </g>
+
+    <!-- 8. "Since 2020" Tagline -->
+    <text x="256" y="445" font-family="'Montserrat', 'Roboto', sans-serif" font-weight="600" font-size="18" fill="#94A3B8" letter-spacing="4" text-anchor="middle">SINCE 2020</text>
   </g>
-
-  <!-- Top-left beautiful light-gloss overlay line -->
-  <path d="M 40 128 C 120 40, 392 40, 472 128 C 412 80, 100 80, 40 128 Z" fill="url(#glossGrad)" />
 </svg>
