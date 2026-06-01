@@ -6,7 +6,7 @@ import { Search, ArrowRight, ChevronLeft, ChevronRight, Loader2, Calendar, Clock
 import CTASection from '../components/common/CTASection';
 import { supabase, BlogPost, isSupabaseConfigured, safeDbQuery } from '../lib/supabase';
 
-const categories = ['All', 'Guides', 'Maintenance', 'Tech Trends', 'Technical', 'ROI', 'Sustainability', 'News'];
+const categories = ['All', 'Educational', 'Guides', 'News', 'Tech'];
 
 export default function Blog() {
   const navigate = useNavigate();
@@ -53,7 +53,22 @@ export default function Blog() {
     return posts.filter(post => {
       const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            post.content.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = activeCategory === 'All' || post.category === activeCategory;
+      
+      let matchesCategory = true;
+      if (activeCategory !== 'All') {
+        const catLower = (post.category || '').toLowerCase();
+        if (activeCategory === 'Educational') {
+          matchesCategory = catLower.includes('educat') || catLower.includes('school') || catLower.includes('learn') || catLower.includes('case') || catLower.includes('study');
+        } else if (activeCategory === 'Guides') {
+          matchesCategory = catLower.includes('guid') || catLower.includes('tutorial') || catLower.includes('how') || catLower.includes('step') || catLower.includes('maintenance');
+        } else if (activeCategory === 'News') {
+          matchesCategory = catLower.includes('news') || catLower.includes('update') || catLower.includes('announc') || catLower.includes('company');
+        } else if (activeCategory === 'Tech') {
+          matchesCategory = catLower.includes('tech') || catLower.includes('insight') || catLower.includes('solar') || catLower.includes('energy');
+        } else {
+          matchesCategory = post.category === activeCategory;
+        }
+      }
       return matchesSearch && matchesCategory;
     });
   }, [searchQuery, activeCategory, posts]);
@@ -154,9 +169,15 @@ export default function Blog() {
                           onChange={(e) => { setActiveCategory(e.target.value); setCurrentPage(1); }}
                           className="w-full bg-white border border-slate-200 text-black py-3 px-6 rounded-xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none appearance-none cursor-pointer font-bold uppercase tracking-widest text-[10px]"
                         >
-                          {categories.map(cat => (
-                            <option key={cat} value={cat}>{cat === 'All' ? 'All Topics' : cat}</option>
-                          ))}
+                          {categories.map(cat => {
+                            let label = cat;
+                            if (cat === 'All') label = 'All Topics';
+                            if (cat === 'Educational') label = 'Educational Articles';
+                            if (cat === 'Guides') label = 'Guides & Tutorials';
+                            if (cat === 'News') label = 'Industry News / Updates';
+                            if (cat === 'Tech') label = 'Tech & Solar Insights';
+                            return <option key={cat} value={cat}>{label}</option>;
+                          })}
                         </select>
                       </div>
                     </div>

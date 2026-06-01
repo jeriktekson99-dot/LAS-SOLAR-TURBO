@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import PageHero from '../components/common/PageHero';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
 import CTASection from '../components/common/CTASection';
 import { supabase, Project, isSupabaseConfigured, safeDbQuery } from '../lib/supabase';
 
@@ -49,6 +49,7 @@ export default function Portfolio() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 4;
 
@@ -87,9 +88,25 @@ export default function Portfolio() {
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
       const cat = getProjectCategory(p);
-      return selectedCategory === 'All' || cat === selectedCategory;
+      const matchesCategory = selectedCategory === 'All' || cat === selectedCategory;
+
+      const title = (p.title || '').toLowerCase();
+      const location = (p.location || '').toLowerCase();
+      const client = (p.client_name || '').toLowerCase();
+      const overview = (p.overview_content || '').toLowerCase();
+      const tech = (p.technical_content || '').toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
+
+      const matchesSearch = !query || 
+        title.includes(query) || 
+        location.includes(query) || 
+        client.includes(query) || 
+        overview.includes(query) || 
+        tech.includes(query);
+
+      return matchesCategory && matchesSearch;
     });
-  }, [projects, selectedCategory]);
+  }, [projects, selectedCategory, searchQuery]);
 
   const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
   const paginatedProjects = filteredProjects.slice(
@@ -113,35 +130,30 @@ export default function Portfolio() {
 
       <section className="py-24 bg-white">
         <div className="container mx-auto px-6">
-          {/* Category Filter Bar */}
-          <div className="flex flex-col items-center justify-center mb-16 space-y-4">
-            <div className="hidden md:flex items-center gap-2 bg-slate-50 p-2 border border-slate-100 rounded-2xl">
-              {['All', 'Residential', 'Commercial', 'Industrial'].map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => { setSelectedCategory(cat); setCurrentPage(1); }}
-                  className={`px-8 py-3 rounded-xl font-display font-black text-xs uppercase tracking-widest transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-app-purple text-white shadow-xl shadow-app-purple/20'
-                      : 'text-slate-400 hover:text-black hover:bg-slate-100/50'
-                  }`}
-                >
-                  {cat === 'All' ? 'All Systems' : `${cat} Systems`}
-                </button>
-              ))}
+          {/* Search and Category Filter Bar */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50 p-8 rounded-[2rem] border border-slate-100 mb-16">
+            <div className="relative w-full md:flex-grow">
+              <input 
+                type="text" 
+                placeholder="Search projects..." 
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-app-purple focus:outline-none text-sm transition-all font-bold uppercase tracking-widest" 
+              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
             </div>
-            <div className="w-full md:hidden">
-              <label className="block text-black font-bold uppercase tracking-widest text-[10px] mb-3 ml-2 text-center">Category</label>
-              <select 
-                value={selectedCategory}
-                onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 text-black py-4 px-6 rounded-2xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none cursor-pointer font-black uppercase tracking-tight text-sm text-center"
-              >
-                <option value="All">All Systems</option>
-                <option value="Residential">Residential Systems</option>
-                <option value="Commercial">Commercial Systems</option>
-                <option value="Industrial">Industrial Systems</option>
-              </select>
+            <div className="flex gap-4 w-full md:w-auto">
+              <div className="w-full md:w-64">
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
+                  className="w-full bg-white border border-slate-200 text-black py-3 px-6 rounded-xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none appearance-none cursor-pointer font-bold uppercase tracking-widest text-[10px]"
+                >
+                  {['All', 'Residential', 'Commercial', 'Industrial'].map(cat => (
+                    <option key={cat} value={cat}>{cat === 'All' ? 'All Systems' : `${cat} Systems`}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -210,7 +222,7 @@ export default function Portfolio() {
               <div className="col-span-full py-20 text-center">
                 <p className="text-slate-400 text-xl font-light italic">No projects found matching these criteria.</p>
                 <button 
-                  onClick={() => { setSelectedCategory('All'); setCurrentPage(1); }}
+                  onClick={() => { setSelectedCategory('All'); setSearchQuery(''); setCurrentPage(1); }}
                   className="mt-6 text-app-purple font-bold uppercase tracking-widest text-sm hover:underline"
                 >
                   Clear Filters

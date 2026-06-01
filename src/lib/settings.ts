@@ -23,7 +23,7 @@ const DEFAULT_SETTINGS: SolarSettings = {
   logoWhiteBackground: 'https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO',
   favicon: '',
   licensingAccreditation: '',
-  businessEmail: 'lyndon_santos@gmail.com',
+  businessEmail: 'lyndon_santos@ymail.com',
   businessPhone: '09173085095',
   businessAddress: 'Jade Villas, Imus, Cavite',
   maintenanceMode: false,

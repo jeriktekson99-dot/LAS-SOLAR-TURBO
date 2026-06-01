@@ -206,13 +206,15 @@ export default function AdminBlogManager() {
     if (filterCategory !== 'All') {
       const catLower = (p.category || '').toLowerCase();
       if (filterCategory === 'Educational') {
-        matchesCategory = catLower.includes('educat') || catLower.includes('school') || catLower.includes('learn');
+        matchesCategory = catLower.includes('educat') || catLower.includes('school') || catLower.includes('learn') || catLower.includes('case') || catLower.includes('study');
       } else if (filterCategory === 'Guides') {
-        matchesCategory = catLower.includes('guid') || catLower.includes('tutorial') || catLower.includes('how') || catLower.includes('step');
+        matchesCategory = catLower.includes('guid') || catLower.includes('tutorial') || catLower.includes('how') || catLower.includes('step') || catLower.includes('maintenance');
       } else if (filterCategory === 'News') {
-        matchesCategory = catLower.includes('news') || catLower.includes('update') || catLower.includes('announc');
+        matchesCategory = catLower.includes('news') || catLower.includes('update') || catLower.includes('announc') || catLower.includes('company');
       } else if (filterCategory === 'Tech') {
         matchesCategory = catLower.includes('tech') || catLower.includes('insight') || catLower.includes('solar') || catLower.includes('energy');
+      } else {
+        matchesCategory = p.category === filterCategory;
       }
     }
 

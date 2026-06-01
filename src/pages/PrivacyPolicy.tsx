@@ -276,8 +276,8 @@ export default function PrivacyPolicy() {
               <ul className="space-y-3 pt-4 pl-6 list-disc text-slate-700 text-base md:text-lg">
                 <li>
                   <strong className="font-semibold text-black">Data Privacy Contact:</strong>{' '}
-                  <a href="mailto:lyndon_santos@gmail.com" className="text-app-purple hover:underline font-medium">
-                    lyndon_santos@gmail.com
+                  <a href="mailto:lyndon_santos@ymail.com" className="text-app-purple hover:underline font-medium">
+                    lyndon_santos@ymail.com
                   </a>
                 </li>
                 <li>

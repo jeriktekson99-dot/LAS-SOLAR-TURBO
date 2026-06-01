@@ -60,7 +60,7 @@ export default function RequestQuote() {
                    </div>
                    <div>
                        <h4 className="font-bold text-black uppercase text-xs tracking-widest mb-1 font-sans">Email Inquiry</h4>
-                       <p className="text-2xl font-display font-black text-black ">lyndon_santos@gmail.com</p>
+                       <p className="text-2xl font-display font-black text-black ">lyndon_santos@ymail.com</p>
                    </div>
                 </div>
                 <div className="flex items-start gap-6 group">
