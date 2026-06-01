@@ -245,15 +245,36 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
       }
 
       if (project?.id) {
-        const { error } = await supabase
+        let { error } = await supabase
           .from('projects')
           .update(formData)
           .eq('id', project.id);
+          
+        if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+          console.warn("Retrying update without 'category' column...", error);
+          const { category, ...cleanData } = formData;
+          const { error: retryError } = await supabase
+            .from('projects')
+            .update(cleanData)
+            .eq('id', project.id);
+          error = retryError;
+        }
+        
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        let { error } = await supabase
           .from('projects')
           .insert([formData]);
+          
+        if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+          console.warn("Retrying insert without 'category' column...", error);
+          const { category, ...cleanData } = formData;
+          const { error: retryError } = await supabase
+            .from('projects')
+            .insert([cleanData]);
+          error = retryError;
+        }
+        
         if (error) throw error;
       }
       onSave();

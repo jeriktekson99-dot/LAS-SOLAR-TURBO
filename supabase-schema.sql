@@ -20,6 +20,7 @@ BEGIN
       thumbnails TEXT[] DEFAULT '{}',
       overview_content TEXT,
       technical_content TEXT,
+      category TEXT DEFAULT 'Residential',
       personnel JSONB DEFAULT '{
         "engineer": {"name": "Engr. Carlos Reyes", "title": "Project Lead | Solar Engineering", "avatar": "https://i.pravatar.cc/150?img=11"},
         "installer": {"name": "Mark Dizon", "title": "Lead Installer | System Expertise", "avatar": "https://i.pravatar.cc/150?img=12"}
@@ -50,6 +51,10 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='is_deleted') THEN
       ALTER TABLE projects ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='category') THEN
+      ALTER TABLE projects ADD COLUMN category TEXT DEFAULT 'Residential';
     END IF;
   END IF;
 END $$;
