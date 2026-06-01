@@ -17,7 +17,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { supabase, Lead, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, Lead, isSupabaseConfigured, safeDbQuery, safeDbUpdate } from '../../lib/supabase';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 
 export const isCalculatorReportUrl = (url: string): boolean => {
@@ -127,27 +127,46 @@ export default function AdminLeadsManager() {
         if (!isSupabaseConfigured) {
           const localSt = localStorage.getItem('las_solar_leads_fallback');
           let currentLeads = localSt ? JSON.parse(localSt) : [];
-          currentLeads = currentLeads.filter((l: any) => !selectedLeads.includes(l.id));
+          currentLeads = currentLeads.map((l: any) => 
+            selectedLeads.includes(l.id) ? { ...l, is_deleted: true } : l
+          );
           localStorage.setItem('las_solar_leads_fallback', JSON.stringify(currentLeads));
-          setLeads(currentLeads);
+          setLeads(currentLeads.filter((l: any) => !l.is_deleted));
         } else {
-          const { error } = await supabase
+          let { error } = await supabase
             .from('leads')
-            .delete()
+            .update({ is_deleted: true })
             .in('id', selectedLeads);
+          if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+            const fallbackResult = await supabase
+              .from('leads')
+              .update({ status: 'Archived' })
+              .in('id', selectedLeads);
+            error = fallbackResult.error;
+          }
           if (error) throw error;
           setLeads(leads.filter(l => !selectedLeads.includes(l.id)));
         }
         setSelectedLeads([]);
       } else if (bulkActionType === 'all') {
         if (!isSupabaseConfigured) {
-          localStorage.setItem('las_solar_leads_fallback', JSON.stringify([]));
+          const localSt = localStorage.getItem('las_solar_leads_fallback');
+          let currentLeads = localSt ? JSON.parse(localSt) : [];
+          currentLeads = currentLeads.map((l: any) => ({ ...l, is_deleted: true }));
+          localStorage.setItem('las_solar_leads_fallback', JSON.stringify(currentLeads));
           setLeads([]);
         } else {
-          const { error } = await supabase
+          let { error } = await supabase
             .from('leads')
-            .delete()
+            .update({ is_deleted: true })
             .neq('id', '00000000-0000-0000-0000-000000000000');
+          if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+            const fallbackResult = await supabase
+              .from('leads')
+              .update({ status: 'Archived' })
+              .neq('id', '00000000-0000-0000-0000-000000000000');
+            error = fallbackResult.error;
+          }
           if (error) throw error;
           setLeads([]);
         }
@@ -167,7 +186,7 @@ export default function AdminLeadsManager() {
       setLoading(true);
       const localSt = localStorage.getItem('las_solar_leads_fallback');
       if (localSt) {
-        setLeads(JSON.parse(localSt));
+        setLeads(JSON.parse(localSt).filter((l: any) => !l.is_deleted));
       } else {
         const demoLeads: Lead[] = [
           {
@@ -205,10 +224,10 @@ export default function AdminLeadsManager() {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await safeDbQuery<Lead[]>(
+        () => supabase.from('leads').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+        () => supabase.from('leads').select('*').order('created_at', { ascending: false })
+      );
 
       if (error) throw error;
       setLeads(data || []);
@@ -226,17 +245,21 @@ export default function AdminLeadsManager() {
       if (!isSupabaseConfigured) {
         const localSt = localStorage.getItem('las_solar_leads_fallback');
         let currentLeads = localSt ? JSON.parse(localSt) : [];
-        currentLeads = currentLeads.filter((l: any) => l.id !== leadToDelete);
+        currentLeads = currentLeads.map((l: any) => 
+          l.id === leadToDelete ? { ...l, is_deleted: true } : l
+        );
         localStorage.setItem('las_solar_leads_fallback', JSON.stringify(currentLeads));
-        setLeads(currentLeads);
+        setLeads(currentLeads.filter((l: any) => !l.is_deleted));
         setLeadToDelete(null);
         setIsDeleting(false);
         return;
       }
-      const { error } = await supabase
-        .from('leads')
-        .delete()
-        .eq('id', leadToDelete);
+      const { error } = await safeDbUpdate(
+        'leads',
+        leadToDelete,
+        { is_deleted: true },
+        { status: 'Archived' }
+      );
 
       if (error) throw error;
       setLeads(leads.filter(l => l.id !== leadToDelete));
@@ -254,8 +277,9 @@ export default function AdminLeadsManager() {
 
     const escapeCSV = (val: any) => {
       if (val === undefined || val === null) return '';
-      const str = String(val).trim();
-      return `"${str.replace(/"/g, '""')}"`;
+      const str = String(val).replace(/"/g, '""').trim();
+      const singleLine = str.replace(/[\r\n]+/g, ' | ');
+      return `"${singleLine}"`;
     };
 
     const headers = [
@@ -271,30 +295,44 @@ export default function AdminLeadsManager() {
       'Timeline',
       'Goal',
       'Address',
+      'Inverter Location Specs',
       'Ocular Visit Date',
       'Created At'
     ];
 
-    const csvRows = leads.map(l => [
-      escapeCSV(l.name),
-      escapeCSV(l.email),
-      escapeCSV(l.phone),
-      escapeCSV(l.property_type),
-      escapeCSV(l.status),
-      escapeCSV(l.monthly_bill),
-      escapeCSV(l.utility_provider),
-      escapeCSV(l.roof_type),
-      escapeCSV(l.shading),
-      escapeCSV(l.timeline),
-      escapeCSV(l.goal),
-      escapeCSV(l.address),
-      escapeCSV(l.ocular_visit_date),
-      escapeCSV(l.created_at ? new Date(l.created_at).toLocaleString() : '')
-    ].join(','));
+    const csvRows = leads.map(l => {
+      const fullAddress = l.address || '';
+      let cleanAddress = fullAddress;
+      let inverterSpecs = '';
+
+      const specsIdx = fullAddress.indexOf('[Inverter Location Specs]');
+      if (specsIdx !== -1) {
+        cleanAddress = fullAddress.substring(0, specsIdx).trim();
+        inverterSpecs = fullAddress.substring(specsIdx).trim();
+      }
+
+      return [
+        escapeCSV(l.name),
+        escapeCSV(l.email),
+        escapeCSV(l.phone),
+        escapeCSV(l.property_type),
+        escapeCSV(l.status),
+        escapeCSV(l.monthly_bill),
+        escapeCSV(l.utility_provider),
+        escapeCSV(l.roof_type),
+        escapeCSV(l.shading),
+        escapeCSV(l.timeline),
+        escapeCSV(l.goal),
+        escapeCSV(cleanAddress),
+        escapeCSV(inverterSpecs),
+        escapeCSV(l.ocular_visit_date),
+        escapeCSV(l.created_at ? new Date(l.created_at).toLocaleString() : '')
+      ].join(',');
+    });
 
     const csvContent = [headers.join(','), ...csvRows].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     
@@ -379,7 +417,7 @@ export default function AdminLeadsManager() {
         <button 
           onClick={handleExportCSV}
           disabled={leads.length === 0}
-          className="bg-black text-white px-8 py-4 rounded-2xl font-display font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-black/20 flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="bg-black text-white px-8 py-4 rounded-2xl font-display font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-black/20 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed w-fit"
         >
           <Download size={18} />
           Export All Leads

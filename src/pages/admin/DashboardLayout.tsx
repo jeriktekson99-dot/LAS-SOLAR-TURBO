@@ -17,7 +17,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, safeDbQuery } from '../../lib/supabase';
 import logoImage from '../../assets/images/regenerated_image_1779165557603.png';
 import CalendarSchedulerModal from '../../components/admin/CalendarSchedulerModal';
 
@@ -57,10 +57,16 @@ export default function AdminDashboardLayout() {
 
   const fetchLeads = async () => {
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+      if (!isSupabaseConfigured) {
+        const localLeadsStr = localStorage.getItem('las_solar_leads_fallback');
+        const list = localLeadsStr ? JSON.parse(localLeadsStr) : [];
+        setLeads(list.filter((l: any) => !l.is_deleted));
+        return;
+      }
+      const { data, error } = await safeDbQuery(
+        () => supabase.from('leads').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+        () => supabase.from('leads').select('*').order('created_at', { ascending: false })
+      );
       if (!error && data) {
         setLeads(data);
       }
@@ -71,11 +77,16 @@ export default function AdminDashboardLayout() {
 
   const fetchProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
+      if (!isSupabaseConfigured) {
+        const localProjectsStr = localStorage.getItem('las_solar_projects_fallback');
+        const list = localProjectsStr ? JSON.parse(localProjectsStr) : [];
+        setAllProjects(list.filter((p: any) => !p.is_deleted));
+        return;
+      }
+      const { data, error } = await safeDbQuery(
+        () => supabase.from('projects').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+        () => supabase.from('projects').select('*').order('created_at', { ascending: false })
+      );
       if (!error && data) {
         setAllProjects(data);
       }
@@ -86,11 +97,16 @@ export default function AdminDashboardLayout() {
 
   const fetchBlogs = async () => {
     try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
+      if (!isSupabaseConfigured) {
+        const localBlogsStr = localStorage.getItem('las_solar_blog_posts_fallback');
+        const list = localBlogsStr ? JSON.parse(localBlogsStr) : [];
+        setAllBlogs(list.filter((b: any) => !b.is_deleted));
+        return;
+      }
+      const { data, error } = await safeDbQuery(
+        () => supabase.from('blog_posts').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+        () => supabase.from('blog_posts').select('*').order('created_at', { ascending: false })
+      );
       if (!error && data) {
         setAllBlogs(data);
       }
@@ -101,28 +117,62 @@ export default function AdminDashboardLayout() {
 
   const fetchNewLeads = async () => {
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('id, name, email, created_at, status, property_type')
-        .eq('status', 'New')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      if (!isSupabaseConfigured) {
+        const localLeadsStr = localStorage.getItem('las_solar_leads_fallback');
+        const list = localLeadsStr ? JSON.parse(localLeadsStr) : [];
+        const activeLeads = list.filter((l: any) => !l.is_deleted);
+        const news = activeLeads.filter((l: any) => l.status === 'New');
+        setNewLeads(news.slice(0, 5));
+
+        const lastOpened = localStorage.getItem('admin_bell_last_opened');
+        if (lastOpened) {
+          const fresh = news.filter((l: any) => l.created_at > lastOpened);
+          setTotalNewCount(fresh.length);
+        } else {
+          setTotalNewCount(news.length);
+        }
+        return;
+      }
+
+      const { data, error } = await safeDbQuery<any[]>(
+        () => supabase
+          .from('leads')
+          .select('id, name, email, created_at, status, property_type')
+          .eq('status', 'New')
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false })
+          .limit(5),
+        () => supabase
+          .from('leads')
+          .select('id, name, email, created_at, status, property_type')
+          .eq('status', 'New')
+          .order('created_at', { ascending: false })
+          .limit(5)
+      );
       
       if (!error && data) {
         setNewLeads(data);
       }
 
       const lastOpened = localStorage.getItem('admin_bell_last_opened');
-      let query = supabase
-        .from('leads')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'New');
+      const buildCountQuery = (filterDeleted: boolean) => {
+        let q = supabase
+          .from('leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'New');
+        if (filterDeleted) {
+          q = q.eq('is_deleted', false);
+        }
+        if (lastOpened) {
+          q = q.gt('created_at', lastOpened);
+        }
+        return q;
+      };
 
-      if (lastOpened) {
-        query = query.gt('created_at', lastOpened);
-      }
-
-      const { count, error: countError } = await query;
+      const { count, error: countError } = await safeDbQuery(
+        () => buildCountQuery(true),
+        () => buildCountQuery(false)
+      );
       
       if (!countError) {
         setTotalNewCount(count || 0);
@@ -134,6 +184,15 @@ export default function AdminDashboardLayout() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      if (!isSupabaseConfigured) {
+        const dummyToken = localStorage.getItem('dummy_admin_token');
+        if (!dummyToken) {
+          navigate('/admin/login');
+        } else {
+          setUser({ email: 'admin@lassolar.com', role: 'admin' });
+        }
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/admin/login');
@@ -158,7 +217,11 @@ export default function AdminDashboardLayout() {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (!isSupabaseConfigured) {
+      localStorage.removeItem('dummy_admin_token');
+    } else {
+      await supabase.auth.signOut();
+    }
     navigate('/admin/login');
   };
 
@@ -214,9 +277,9 @@ export default function AdminDashboardLayout() {
 
       {/* Sidebar */}
       <aside 
-        className={`fixed lg:static inset-y-0 left-0 w-80 bg-white border-r border-slate-200 z-50 transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`fixed lg:static inset-y-0 left-0 w-80 bg-white border-r border-slate-200 z-50 overflow-y-auto transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        <div className="h-full flex flex-col p-8">
+        <div className="min-h-full flex flex-col p-8">
           {/* Logo / Brand Header */}
           <div className="flex items-center justify-between mb-10 border-b border-slate-100 pb-5">
             <Link to="/admin/dashboard/overview" className="flex items-center gap-3.5 group" onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -13,7 +13,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { supabase, Lead, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, Lead, isSupabaseConfigured, safeDbQuery } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import CalendarSchedulerModal from '../../components/admin/CalendarSchedulerModal';
 
@@ -65,329 +65,281 @@ export default function AdminOverview() {
   const [weeklyTrend, setWeeklyTrend] = useState<any[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<any | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!isSupabaseConfigured) {
-        setLoading(true);
-        const fallbackLeadsStr = localStorage.getItem('las_solar_leads_fallback');
-        const leadsDataList = fallbackLeadsStr ? JSON.parse(fallbackLeadsStr) : [
-          {
-            id: 'demo-1',
-            name: 'Juan Dela Cruz',
-            phone: '09171234567',
-            email: 'juan@example.com',
-            address: '123 Rizal Ave, Quezon City',
-            property_type: 'Residential (House & Lot)',
-            utility_provider: 'Meralco',
-            monthly_bill: '₱8,500',
-            status: 'New',
-            created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-            goal: 'Reduce Monthly Electricity Bill'
-          },
-          {
-            id: 'demo-2',
-            name: 'Maria Santos',
-            phone: '09187654321',
-            email: 'maria@example.com',
-            address: '456 Taft Ave, Manila',
-            property_type: 'Commercial (Retail/Office)',
-            utility_provider: 'Meralco',
-            monthly_bill: '₱24,000',
-            status: 'Contacted',
-            created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-            goal: 'Eco-Friendly / Sustainability Goals'
-          }
-        ];
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
-        const blogsDataList = [
-          { id: '1', title: 'Why Solar is a Long Term Investment in the Philippines', views: 320, created_at: new Date(Date.now() - 86400000 * 5).toISOString() },
-          { id: '2', title: 'Grid-Tied vs Hybrid Solar Systems Explained', views: 180, created_at: new Date(Date.now() - 86400000 * 10).toISOString() }
-        ];
-        const totalViews = 500;
-        const subscribersDataList = [
-          { id: 's1', email: 'newsletter1@example.com', created_at: new Date(Date.now() - 86400000 * 2).toISOString() }
-        ];
-        const projectsDataList = [
-          { id: 'p1', title: 'Completed Solar Installation Red', created_at: new Date(Date.now() - 86400000 * 15).toISOString() }
-        ];
-
-        setAllLeads(leadsDataList);
-        setAllSubscribers(subscribersDataList);
-        setAllProjects(projectsDataList);
-        setAllBlogs(blogsDataList);
-        setAllViews(totalViews);
-        setRecentLeads(leadsDataList.slice(0, 5));
-
-        const upcoming = leadsDataList
-          .map((lead: any) => {
-            let visitDateStr = lead.ocular_visit_date;
-            let visitTimeSlot = '9:00 AM - 12:00 PM';
-
-            if (!visitDateStr && lead.timeline) {
-              const match = lead.timeline?.match(/Preferred Ocular Visit:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})(?:\s*\|\s*([^)]+))?/);
-              if (match) {
-                visitDateStr = match[1];
-                visitTimeSlot = match[2] || '9:00 AM - 12:00 PM';
-              }
-            }
-
-            if (!visitDateStr) return null;
-            const parsed = new Date(visitDateStr);
-            
-            return {
-              id: lead.id,
-              name: lead.name,
-              address: lead.address || '',
-              property_type: lead.property_type,
-              ocular_visit_date: visitDateStr,
-              visitTimeSlot: visitTimeSlot,
-              dateObj: parsed,
-              isValid: !isNaN(parsed.getTime())
-            };
-          })
-          .filter((u: any): u is any => u !== null && u.isValid);
-
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
-
-          const sortedUpcoming = upcoming
-            .filter((u: any) => u.dateObj >= todayStart)
-            .sort((a: any, b: any) => a.dateObj.getTime() - b.dateObj.getTime());
-
-          setUpcomingAssessments(sortedUpcoming);
-
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          const currentYear = new Date().getFullYear();
-          const currentMonthIdx = new Date().getMonth();
-          const activeMonths = months.slice(0, currentMonthIdx + 1);
-
-          const tempYearly = activeMonths.map((m, index) => {
-            const leadCount = leadsDataList.filter((item: any) => {
-              if (!item.created_at) return false;
-              const d = new Date(item.created_at);
-              return d.getFullYear() === currentYear && d.getMonth() === index;
-            }).length;
-
-            const subCount = subscribersDataList.filter((item: any) => {
-              if (!item.created_at) return false;
-              const d = new Date(item.created_at);
-              return d.getFullYear() === currentYear && d.getMonth() === index;
-            }).length;
-
-            return {
-              label: m,
-              leads: leadCount,
-              subscribers: subCount,
-              activities: leadCount + subCount
-            };
-          });
-
-          setYearlyTrend(tempYearly);
-
-          const tempWeekly = [
-            { label: 'Week 1', inquiries: 0, subs: 0, activities: 0 },
-            { label: 'Week 2', inquiries: 0, subs: 0, activities: 0 },
-            { label: 'Week 3', inquiries: 0, subs: 0, activities: 0 },
-            { label: 'Week 4', inquiries: 0, subs: 0, activities: 0 }
-          ];
-
-          const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-          leadsDataList.forEach((item: any) => {
-            if (!item.created_at) return;
-            const d = new Date(item.created_at);
-            if (d >= thirtyDaysAgo) {
-              const diffDays = Math.floor((todayStart.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
-              const wIdx = Math.min(3, Math.floor(diffDays / 7.5));
-              const idx = 3 - wIdx;
-              if (idx >= 0 && idx < 4) {
-                tempWeekly[idx].inquiries++;
-                tempWeekly[idx].activities++;
-              }
-            }
-          });
-
-          subscribersDataList.forEach((item: any) => {
-            if (!item.created_at) return;
-            const d = new Date(item.created_at);
-            if (d >= thirtyDaysAgo) {
-              const diffDays = Math.floor((todayStart.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
-              const wIdx = Math.min(3, Math.floor(diffDays / 7.5));
-              const idx = 3 - wIdx;
-              if (idx >= 0 && idx < 4) {
-                tempWeekly[idx].subs++;
-                tempWeekly[idx].activities++;
-              }
-            }
-          });
-
-          setWeeklyTrend(tempWeekly);
-          setLoading(false);
-          return;
-      }
-
+  const fetchData = useCallback(async () => {
+    if (!isSupabaseConfigured) {
       setLoading(true);
-      try {
-        const [projects, leads, subscribers, blogs] = await Promise.all([
-          supabase.from('projects').select('id, created_at').eq('is_deleted', false),
-          supabase.from('leads').select('*').order('created_at', { ascending: false }),
-          supabase.from('subscribers').select('*').order('created_at', { ascending: false }),
-          supabase.from('blog_posts').select('views, created_at').eq('is_deleted', false)
-        ]);
+      const fallbackLeadsStr = localStorage.getItem('las_solar_leads_fallback');
+      const rawLeads = fallbackLeadsStr ? JSON.parse(fallbackLeadsStr) : [
+        {
+          id: 'demo-1',
+          name: 'Juan Dela Cruz',
+          phone: '09171234567',
+          email: 'juan@example.com',
+          address: '123 Rizal Ave, Quezon City',
+          property_type: 'Residential (House & Lot)',
+          utility_provider: 'Meralco',
+          monthly_bill: '₱8,500',
+          status: 'New',
+          created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+          goal: 'Reduce Monthly Electricity Bill'
+        },
+        {
+          id: 'demo-2',
+          name: 'Maria Santos',
+          phone: '09187654321',
+          email: 'maria@example.com',
+          address: '456 Taft Ave, Manila',
+          property_type: 'Commercial (Retail/Office)',
+          utility_provider: 'Meralco',
+          monthly_bill: '₱24,000',
+          status: 'Contacted',
+          created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+          goal: 'Eco-Friendly / Sustainability Goals'
+        }
+      ];
+      const leadsDataList = rawLeads.filter((l: any) => !l.is_deleted);
 
-        const blogsDataList = blogs.data || [];
-        const totalViews = blogsDataList.reduce((acc, curr) => acc + (curr.views || 0), 0);
-        const leadsDataList = leads.data || [];
-        const subscribersDataList = subscribers.data || [];
-        const projectsDataList = projects.data || [];
-
-        // Store raw items in React state to compute real-time statistics
-        setAllLeads(leadsDataList);
-        setAllSubscribers(subscribersDataList);
-        setAllProjects(projectsDataList);
-        setAllBlogs(blogsDataList);
-        setAllViews(totalViews);
-
-        // Filter 5 most recent leads
-        setRecentLeads((leads.data || []).slice(0, 5));
-
-        // Compile upcoming ocular visits/site assessments
-        const upcoming = (leads.data || [])
-          .map(lead => {
-            let visitDateStr = lead.ocular_visit_date;
-            let visitTimeSlot = '9:00 AM - 12:00 PM';
-
-            if (!visitDateStr && lead.timeline) {
-              const match = lead.timeline?.match(/Preferred Ocular Visit:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})(?:\s*\|\s*([^)]+))?/);
-              if (match) {
-                visitDateStr = match[1];
-                visitTimeSlot = match[2] || '9:00 AM - 12:00 PM';
-              }
-            }
-
-            if (!visitDateStr) return null;
-            const parsed = new Date(visitDateStr);
-            
-            return {
-              id: lead.id,
-              name: lead.name,
-              address: lead.address || '',
-              property_type: lead.property_type,
-              ocular_visit_date: visitDateStr,
-              visitTimeSlot: visitTimeSlot,
-              dateObj: parsed,
-              isValid: !isNaN(parsed.getTime())
-            };
-          })
-          .filter((u): u is any => u !== null && u.isValid);
-
-        // Filter valid upcoming or today's visual visits
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-
-        const sortedUpcoming = upcoming
-          .filter(u => u.dateObj >= todayStart)
-          .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
-
-        setUpcomingAssessments(sortedUpcoming);
-
-        // Compile trends: Monthly labels for Year timeframe (YTD 2026)
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const currentYear = new Date().getFullYear();
-        const currentMonthIdx = new Date().getMonth();
-        const activeMonths = months.slice(0, currentMonthIdx + 1);
-
-        const tempYearly = activeMonths.map((m, index) => {
-          const leadCount = (leads.data || []).filter(item => {
-            if (!item.created_at) return false;
-            const d = new Date(item.created_at);
-            return d.getFullYear() === currentYear && d.getMonth() === index;
-          }).length;
-
-          const subCount = (subscribers.data || []).filter(item => {
-            if (!item.created_at) return false;
-            const d = new Date(item.created_at);
-            return d.getFullYear() === currentYear && d.getMonth() === index;
-          }).length;
-
-          return {
-            label: m,
-            leads: leadCount,
-            subscribers: subCount,
-            activities: leadCount + subCount
-          };
-        });
-
-        setYearlyTrend(tempYearly);
-
-        // Compile weekly trend for the "Last 30 Days" timeframe (4 periods)
-        const tempWeekly = [
-          { label: 'Week 1', inquiries: 0, subs: 0, activities: 0 },
-          { label: 'Week 2', inquiries: 0, subs: 0, activities: 0 },
-          { label: 'Week 3', inquiries: 0, subs: 0, activities: 0 },
-          { label: 'Week 4', inquiries: 0, subs: 0, activities: 0 }
-        ];
-
-        const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        (leads.data || []).forEach(item => {
-          if (!item.created_at) return;
-          const d = new Date(item.created_at);
-          if (d >= thirtyDaysAgo) {
-            const diffDays = Math.floor((todayStart.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
-            const wIdx = Math.min(3, Math.floor(diffDays / 7.5));
-            const idx = 3 - wIdx;
-            if (idx >= 0 && idx < 4) {
-              tempWeekly[idx].inquiries++;
-              tempWeekly[idx].activities++;
-            }
-          }
-        });
-
-        (subscribers.data || []).forEach(item => {
-          if (!item.created_at) return;
-          const d = new Date(item.created_at);
-          if (d >= thirtyDaysAgo) {
-            const diffDays = Math.floor((todayStart.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
-            const wIdx = Math.min(3, Math.floor(diffDays / 7.5));
-            const idx = 3 - wIdx;
-            if (idx >= 0 && idx < 4) {
-              tempWeekly[idx].subs++;
-              tempWeekly[idx].activities++;
-            }
-          }
-        });
-
-        setWeeklyTrend(tempWeekly);
-
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-      } finally {
-        setLoading(false);
+      const blogsDataList = [
+        { id: '1', title: 'Why Solar is a Long Term Investment in the Philippines', views: 320, created_at: new Date(Date.now() - 86400000 * 5).toISOString() },
+        { id: '2', title: 'Grid-Tied vs Hybrid Solar Systems Explained', views: 180, created_at: new Date(Date.now() - 86400000 * 10).toISOString() }
+      ];
+      const totalViews = 500;
+      const localSubsStr = localStorage.getItem('las_solar_subscribers_fallback');
+      const subscribersDataList = localSubsStr 
+        ? JSON.parse(localSubsStr).filter((s: any) => !s.is_deleted)
+        : [
+            { id: 's-demo-1', email: 'pedro@example.com', source: 'Home Footer', created_at: new Date(Date.now() - 86450000 * 3).toISOString() },
+            { id: 's-demo-2', email: 'ana.santos@example.com', source: 'Blog Detail Sidebar', created_at: new Date(Date.now() - 86450000 * 7).toISOString() }
+          ];
+      if (!localSubsStr) {
+        localStorage.setItem('las_solar_subscribers_fallback', JSON.stringify(subscribersDataList));
       }
+      const projectsDataList = [
+        { id: 'p1', title: 'Completed Solar Installation Red', created_at: new Date(Date.now() - 86400000 * 15).toISOString() }
+      ];
+
+      setAllLeads(leadsDataList);
+      setAllSubscribers(subscribersDataList);
+      setAllProjects(projectsDataList);
+      setAllBlogs(blogsDataList);
+      setAllViews(totalViews);
+      setRecentLeads(leadsDataList.slice(0, 5));
+
+      const upcoming = leadsDataList
+        .map((lead: any) => {
+          let visitDateStr = lead.ocular_visit_date;
+          let visitTimeSlot = '9:00 AM - 12:00 PM';
+
+          if (!visitDateStr && lead.timeline) {
+            const match = lead.timeline?.match(/Preferred Ocular Visit:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})(?:\s*\|\s*([^)]+))?/);
+            if (match) {
+              visitDateStr = match[1];
+              visitTimeSlot = match[2] || '9:00 AM - 12:00 PM';
+            }
+          }
+
+          if (!visitDateStr) return null;
+          const parsed = new Date(visitDateStr);
+          
+          return {
+            id: lead.id,
+            name: lead.name,
+            address: lead.address || '',
+            property_type: lead.property_type,
+            ocular_visit_date: visitDateStr,
+            visitTimeSlot: visitTimeSlot,
+            dateObj: parsed,
+            isValid: !isNaN(parsed.getTime())
+          };
+        })
+        .filter((u: any): u is any => u !== null && u.isValid);
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const sortedUpcoming = upcoming
+        .filter((u: any) => u.dateObj >= todayStart)
+        .sort((a: any, b: any) => a.dateObj.getTime() - b.dateObj.getTime());
+
+      setUpcomingAssessments(sortedUpcoming);
+      setLoading(false);
+      return;
     }
 
-    fetchData();
+    setLoading(true);
+    try {
+      const [projects, leads, subscribers, blogs] = await Promise.all([
+        safeDbQuery(
+          () => supabase.from('projects').select('id, created_at').eq('is_deleted', false),
+          () => supabase.from('projects').select('id, created_at')
+        ),
+        safeDbQuery(
+          () => supabase.from('leads').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+          () => supabase.from('leads').select('*').order('created_at', { ascending: false })
+        ),
+        safeDbQuery(
+          () => supabase.from('subscribers').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+          () => supabase.from('subscribers').select('*').order('created_at', { ascending: false })
+        ),
+        safeDbQuery(
+          () => supabase.from('blog_posts').select('views, created_at').eq('is_deleted', false),
+          () => supabase.from('blog_posts').select('views, created_at')
+        )
+      ]);
+
+      const blogsDataList = blogs.data || [];
+      const totalViews = blogsDataList.reduce((acc, curr) => acc + (curr.views || 0), 0);
+      const leadsDataList = leads.data || [];
+      const subscribersDataList = subscribers.data || [];
+      const projectsDataList = projects.data || [];
+
+      setAllLeads(leadsDataList);
+      setAllSubscribers(subscribersDataList);
+      setAllProjects(projectsDataList);
+      setAllBlogs(blogsDataList);
+      setAllViews(totalViews);
+
+      setRecentLeads(leadsDataList.slice(0, 5));
+
+      const upcoming = leadsDataList
+        .map(lead => {
+          let visitDateStr = lead.ocular_visit_date;
+          let visitTimeSlot = '9:00 AM - 12:00 PM';
+
+          if (!visitDateStr && lead.timeline) {
+            const match = lead.timeline?.match(/Preferred Ocular Visit:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})(?:\s*\|\s*([^)]+))?/);
+            if (match) {
+              visitDateStr = match[1];
+              visitTimeSlot = match[2] || '9:00 AM - 12:00 PM';
+            }
+          }
+
+          if (!visitDateStr) return null;
+          const parsed = new Date(visitDateStr);
+          
+          return {
+            id: lead.id,
+            name: lead.name,
+            address: lead.address || '',
+            property_type: lead.property_type,
+            ocular_visit_date: visitDateStr,
+            visitTimeSlot: visitTimeSlot,
+            dateObj: parsed,
+            isValid: !isNaN(parsed.getTime())
+          };
+        })
+        .filter((u): u is any => u !== null && u.isValid);
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const sortedUpcoming = upcoming
+        .filter(u => u.dateObj >= todayStart)
+        .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+
+      setUpcomingAssessments(sortedUpcoming);
+
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Compute live timeframe performance or activities dynamically (Yearly vs Last 30 Days)
   useEffect(() => {
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-    const startOfYear2026 = new Date('2026-01-01T00:00:00Z');
-    const startOfYear2025 = new Date('2025-01-01T00:00:00Z');
+    fetchData();
+  }, [fetchData]);
 
+  // Synchronize stats and trends whenever raw data or date parameters change
+  useEffect(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    const currentMonthIdx = new Date().getMonth();
+
+    // 1. Compile selected year monthly trend
+    const activeMonthsCount = selectedYear === currentYear ? currentMonthIdx + 1 : 12;
+    const activeMonths = months.slice(0, activeMonthsCount);
+
+    const tempYearly = activeMonths.map((m, index) => {
+      const leadCount = allLeads.filter(item => {
+        if (!item.created_at) return false;
+        const d = new Date(item.created_at);
+        return d.getFullYear() === selectedYear && d.getMonth() === index;
+      }).length;
+
+      const subCount = allSubscribers.filter(item => {
+        if (!item.created_at) return false;
+        const d = new Date(item.created_at);
+        return d.getFullYear() === selectedYear && d.getMonth() === index;
+      }).length;
+
+      return {
+        label: m,
+        leads: leadCount,
+        subscribers: subCount,
+        activities: leadCount + subCount
+      };
+    });
+    setYearlyTrend(tempYearly);
+
+    // 2. Compile weekly trend for the selected month and year
+    const tempWeekly = [
+      { label: 'Week 1', inquiries: 0, subs: 0, activities: 0 },
+      { label: 'Week 2', inquiries: 0, subs: 0, activities: 0 },
+      { label: 'Week 3', inquiries: 0, subs: 0, activities: 0 },
+      { label: 'Week 4', inquiries: 0, subs: 0, activities: 0 }
+    ];
+
+    allLeads.forEach(item => {
+      if (!item.created_at) return;
+      const d = new Date(item.created_at);
+      if (d.getFullYear() === selectedYear && d.getMonth() === selectedMonth) {
+        const day = d.getDate();
+        let idx = 0;
+        if (day <= 7) idx = 0;
+        else if (day <= 14) idx = 1;
+        else if (day <= 21) idx = 2;
+        else idx = 3;
+        tempWeekly[idx].inquiries++;
+        tempWeekly[idx].activities++;
+      }
+    });
+
+    allSubscribers.forEach(item => {
+      if (!item.created_at) return;
+      const d = new Date(item.created_at);
+      if (d.getFullYear() === selectedYear && d.getMonth() === selectedMonth) {
+        const day = d.getDate();
+        let idx = 0;
+        if (day <= 7) idx = 0;
+        else if (day <= 14) idx = 1;
+        else if (day <= 21) idx = 2;
+        else idx = 3;
+        tempWeekly[idx].subs++;
+        tempWeekly[idx].activities++;
+      }
+    });
+    setWeeklyTrend(tempWeekly);
+
+    // 3. Compile top stats cards
     if (timeframe === '30days') {
-      // Leads (Last 30 days)
+      // Selected Month leads
       const currentLeads = allLeads.filter(lead => {
         if (!lead.created_at) return false;
-        return new Date(lead.created_at) >= thirtyDaysAgo;
+        const d = new Date(lead.created_at);
+        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
       });
+
+      // Previous Month leads
+      const prevMonthIdx = selectedMonth === 0 ? 11 : selectedMonth - 1;
+      const prevYearVal = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
       const previousLeads = allLeads.filter(lead => {
         if (!lead.created_at) return false;
         const d = new Date(lead.created_at);
-        return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+        return d.getFullYear() === prevYearVal && d.getMonth() === prevMonthIdx;
       });
 
       const currentCount = currentLeads.length;
@@ -405,28 +357,31 @@ export default function AdminOverview() {
         changeStr = '0%';
       }
 
-      // Published Projects (Total count in system, and show count added in last 30d in change label)
+      // Published Projects in selected month
       const recentProjectsAdded = allProjects.filter(p => {
         if (!p.created_at) return false;
-        return new Date(p.created_at) >= thirtyDaysAgo;
+        const d = new Date(p.created_at);
+        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
       }).length;
 
-      // Total Views (Sum of views of blog posts created in the last 30 days)
+      // Views on blog posts in selected month
       const recentBlogs = allBlogs.filter(b => {
         if (!b.created_at) return false;
-        return new Date(b.created_at) >= thirtyDaysAgo;
+        const d = new Date(b.created_at);
+        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
       });
       const viewsShare = recentBlogs.reduce((acc, curr) => acc + (curr.views || 0), 0);
 
-      // Subscribers (Last 30 days)
+      // Selected Month subscribers
       const currentSubs = allSubscribers.filter(sub => {
         if (!sub.created_at) return false;
-        return new Date(sub.created_at) >= thirtyDaysAgo;
+        const d = new Date(sub.created_at);
+        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
       });
       const previousSubs = allSubscribers.filter(sub => {
         if (!sub.created_at) return false;
         const d = new Date(sub.created_at);
-        return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+        return d.getFullYear() === prevYearVal && d.getMonth() === prevMonthIdx;
       });
 
       const currentSubsCount = currentSubs.length;
@@ -444,26 +399,31 @@ export default function AdminOverview() {
         subsChangeStr = '0%';
       }
 
+      const monthLabel = months[selectedMonth];
       setStats([
-        { label: 'Leads (30d)', value: currentCount.toString(), change: changeStr, positive: positive, icon: Users },
+        { label: `Leads (${monthLabel})`, value: currentCount.toString(), change: changeStr, positive: positive, icon: Users },
         { label: 'Published Projects', value: allProjects.length.toString(), change: `+${recentProjectsAdded} new`, positive: true, icon: FileText },
-        { label: 'Total Views (30d)', value: viewsShare.toLocaleString(), change: '+0%', positive: true, icon: Zap },
-        { label: 'Subscribers (30d)', value: currentSubsCount.toString(), change: subsChangeStr, positive: subsPositive, icon: TrendingUp },
+        { label: `Total Views (${monthLabel})`, value: viewsShare.toLocaleString(), change: '+0%', positive: true, icon: Zap },
+        { label: `Subscribers (${monthLabel})`, value: currentSubsCount.toString(), change: subsChangeStr, positive: subsPositive, icon: TrendingUp },
       ]);
     } else {
-      // Yearly Frame (Jan 2026 - Present)
+      // Selected Year statistical tracking
       const currentYearLeads = allLeads.filter(lead => {
         if (!lead.created_at) return false;
-        return new Date(lead.created_at) >= startOfYear2026;
+        const d = new Date(lead.created_at);
+        return d.getFullYear() === selectedYear;
       });
       const previousYearLeads = allLeads.filter(lead => {
         if (!lead.created_at) return false;
         const d = new Date(lead.created_at);
-        return d >= startOfYear2025 && d < startOfYear2026;
+        return d.getFullYear() === selectedYear - 1;
       });
 
-      // Avoid showing zero if database baseline is brand new
-      const curCount = currentYearLeads.length || allLeads.length;
+      const curCount = currentYearLeads.length || allLeads.filter(l => {
+        if (!l.created_at) return false;
+        const d = new Date(l.created_at);
+        return d.getFullYear() === selectedYear;
+      }).length;
       const prevCount = previousYearLeads.length;
 
       let changeStr = '+0%';
@@ -476,32 +436,39 @@ export default function AdminOverview() {
         changeStr = `+${currentYearLeads.length} new`;
       }
 
-      // Published Projects (YTD)
+      // Published Projects in selected year
       const yearlyProjectsAdded = allProjects.filter(p => {
         if (!p.created_at) return false;
-        return new Date(p.created_at) >= startOfYear2026;
+        const d = new Date(p.created_at);
+        return d.getFullYear() === selectedYear;
       }).length;
       const projectsYearlyChange = `+${yearlyProjectsAdded} new`;
 
-      // Total Views (Overall views since start of year)
+      // Views count of blog posts created in selected year
       const yearlyBlogs = allBlogs.filter(b => {
         if (!b.created_at) return false;
-        return new Date(b.created_at) >= startOfYear2026;
+        const d = new Date(b.created_at);
+        return d.getFullYear() === selectedYear;
       });
       const viewsCount = yearlyBlogs.reduce((acc, curr) => acc + (curr.views || 0), 0);
 
-      // Subscribers (Yearly)
+      // Selected Year subscribers
       const currentYearSubs = allSubscribers.filter(sub => {
         if (!sub.created_at) return false;
-        return new Date(sub.created_at) >= startOfYear2026;
+        const d = new Date(sub.created_at);
+        return d.getFullYear() === selectedYear;
       });
       const previousYearSubs = allSubscribers.filter(sub => {
         if (!sub.created_at) return false;
         const d = new Date(sub.created_at);
-        return d >= startOfYear2025 && d < startOfYear2026;
+        return d.getFullYear() === selectedYear - 1;
       });
 
-      const curSubsCount = currentYearSubs.length || allSubscribers.length;
+      const curSubsCount = currentYearSubs.length || allSubscribers.filter(s => {
+        if (!s.created_at) return false;
+        const d = new Date(s.created_at);
+        return d.getFullYear() === selectedYear;
+      }).length;
       const prevSubsCount = previousYearSubs.length;
 
       let subsChangeStr = '+0%';
@@ -515,13 +482,26 @@ export default function AdminOverview() {
       }
 
       setStats([
-        { label: 'Total Leads (YTD)', value: curCount.toString(), change: changeStr, positive: positive, icon: Users },
+        { label: `Total Leads (${selectedYear})`, value: curCount.toString(), change: changeStr, positive: positive, icon: Users },
         { label: 'Published Projects', value: allProjects.length.toString(), change: projectsYearlyChange, positive: true, icon: FileText },
-        { label: 'Total Views (YTD)', value: viewsCount.toLocaleString(), change: '+0%', positive: true, icon: Zap },
-        { label: 'Subscribers (YTD)', value: curSubsCount.toString(), change: subsChangeStr, positive: subsPositive, icon: TrendingUp },
+        { label: `Total Views (${selectedYear})`, value: viewsCount.toLocaleString(), change: '+0%', positive: true, icon: Zap },
+        { label: `Subscribers (${selectedYear})`, value: curSubsCount.toString(), change: subsChangeStr, positive: subsPositive, icon: TrendingUp },
       ]);
     }
-  }, [timeframe, allLeads, allSubscribers, allProjects, allBlogs, allViews]);
+  }, [timeframe, allLeads, allSubscribers, allProjects, allBlogs, selectedMonth, selectedYear]);
+
+  // Real-time listener for context updates and settings changes
+  useEffect(() => {
+    const handleContextChanged = () => {
+      fetchData();
+    };
+    window.addEventListener('las-solar-context-updated', handleContextChanged);
+    window.addEventListener('las-solar-settings-changed', handleContextChanged);
+    return () => {
+      window.removeEventListener('las-solar-context-updated', handleContextChanged);
+      window.removeEventListener('las-solar-settings-changed', handleContextChanged);
+    };
+  }, [fetchData]);
 
   const parseOcularDate = (dateStr: string) => {
     try {
@@ -560,6 +540,33 @@ export default function AdminOverview() {
           <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">Platform Performance & Statistics</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Calendar Scope Pickers */}
+          <div className="flex items-center gap-2">
+            {timeframe === '30days' && (
+              <select
+                id="select-analytics-month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="bg-white px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-black cursor-pointer shadow-sm transition-all"
+              >
+                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, idx) => (
+                  <option key={idx} value={idx}>{m}</option>
+                ))}
+              </select>
+            )}
+            
+            <select
+              id="select-analytics-year"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-white px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-black cursor-pointer shadow-sm transition-all"
+            >
+              {Array.from({ length: new Date().getFullYear() - 2024 + 1 }, (_, i) => 2024 + i).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="bg-white p-2 rounded-2xl border border-slate-100 flex items-center justify-between sm:justify-start gap-2 shadow-sm">
             <button 
               onClick={() => setTimeframe('30days')}
@@ -605,7 +612,10 @@ export default function AdminOverview() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-xs font-black uppercase tracking-widest text-black">
-              {timeframe === 'yearly' ? 'Yearly Activity & Engagement (2026 YTD)' : 'Weekly Performance Trends (Last 30 Days)'}
+              {timeframe === 'yearly' 
+                ? `Yearly Activity & Engagement (${selectedYear})` 
+                : `Weekly Performance Trends (${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][selectedMonth]} ${selectedYear})`
+              }
             </h3>
             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">Representing newly registered inquiries and email newsletter subscribers</p>
           </div>

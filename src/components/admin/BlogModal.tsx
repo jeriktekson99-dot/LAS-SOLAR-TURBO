@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Loader2 } from 'lucide-react';
-import { supabase, BlogPost, uploadImage } from '../../lib/supabase';
+import { supabase, BlogPost, uploadImage, isSupabaseConfigured } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
 
 interface BlogModalProps {
@@ -15,19 +15,24 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<Partial<BlogPost>>({
-    title: '',
-    author_name: 'Mark Dizon',
-    category: 'Solar Guides',
-    content: '',
-    image_url: '',
-    read_time: '5 min read',
+  const [formData, setFormData] = useState<Partial<BlogPost>>(() => {
+    if (post) {
+      return post;
+    }
+    return {
+      title: '',
+      author_name: 'Mark Dizon',
+      category: 'Solar Guides',
+      content: '',
+      image_url: '',
+      read_time: '5 min read',
+    };
   });
 
   useEffect(() => {
-    if (post) {
+    if (post && post.id !== formData.id) {
       setFormData(post);
-    } else {
+    } else if (!post && formData.id) {
       setFormData({
         title: '',
         author_name: 'Mark Dizon',
@@ -52,6 +57,8 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
       alert('Failed to upload image.');
     } finally {
       setUploading(false);
+      // Reset input value so the same file can be selected/uploaded again
+      e.target.value = '';
     }
   };
 
@@ -60,6 +67,29 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
     setLoading(true);
 
     try {
+      if (!isSupabaseConfigured) {
+        const localSt = localStorage.getItem('las_solar_blog_posts_fallback');
+        let currentPosts = localSt ? JSON.parse(localSt) : [];
+        if (post?.id) {
+          currentPosts = currentPosts.map((p: any) => 
+            p.id === post.id ? { ...p, ...formData, updated_at: new Date().toISOString() } : p
+          );
+        } else {
+          const newPost = {
+            ...formData,
+            id: `local-post-${Date.now()}`,
+            created_at: new Date().toISOString(),
+            views: 0,
+            is_deleted: false
+          };
+          currentPosts.unshift(newPost);
+        }
+        localStorage.setItem('las_solar_blog_posts_fallback', JSON.stringify(currentPosts));
+        onSave();
+        onClose();
+        return;
+      }
+
       if (post?.id) {
         const { error } = await supabase
           .from('blog_posts')

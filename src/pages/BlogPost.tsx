@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   Check
 } from 'lucide-react';
-import { supabase, BlogPost, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, BlogPost, isSupabaseConfigured, safeDbQuery } from '../lib/supabase';
 import DOMPurify from 'dompurify';
 
 export default function BlogPostPage() {
@@ -98,12 +98,19 @@ export default function BlogPostPage() {
 
   const fetchTrending = async () => {
     try {
-      const { data } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('views', { ascending: false })
-        .limit(3);
+      const { data } = await safeDbQuery<BlogPost[]>(
+        () => supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('is_deleted', false)
+          .order('views', { ascending: false })
+          .limit(3),
+        () => supabase
+          .from('blog_posts')
+          .select('*')
+          .order('views', { ascending: false })
+          .limit(3)
+      );
       
       setTrending(data || []);
     } catch (err) {
@@ -113,13 +120,21 @@ export default function BlogPostPage() {
 
   const fetchRelated = async (currentId: string, category: string) => {
     try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('is_deleted', false)
-        .neq('id', currentId)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data, error } = await safeDbQuery<BlogPost[]>(
+        () => supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('is_deleted', false)
+          .neq('id', currentId)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        () => supabase
+          .from('blog_posts')
+          .select('*')
+          .neq('id', currentId)
+          .order('created_at', { ascending: false })
+          .limit(10)
+      );
 
       if (error) throw error;
 
@@ -144,6 +159,29 @@ export default function BlogPostPage() {
     
     setSubscribing(true);
     try {
+      if (!isSupabaseConfigured) {
+        const localSt = localStorage.getItem('las_solar_subscribers_fallback');
+        let currentSubs = localSt ? JSON.parse(localSt) : [];
+        const normEmail = email.trim().toLowerCase();
+        
+        if (currentSubs.some((s: any) => s.email === normEmail && !s.is_deleted)) {
+          setSubscribed(true);
+          return;
+        }
+        
+        const newSub = {
+          id: `local-sub-${Date.now()}`,
+          email: normEmail,
+          source: 'Blog Detail Sidebar',
+          created_at: new Date().toISOString(),
+          is_deleted: false
+        };
+        currentSubs.push(newSub);
+        localStorage.setItem('las_solar_subscribers_fallback', JSON.stringify(currentSubs));
+        setSubscribed(true);
+        return;
+      }
+
       const { error } = await supabase
         .from('subscribers')
         .insert({ 

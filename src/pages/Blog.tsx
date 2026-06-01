@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageHero from '../components/common/PageHero';
 import { Search, ArrowRight, ChevronLeft, ChevronRight, Loader2, Calendar, Clock } from 'lucide-react';
 import CTASection from '../components/common/CTASection';
-import { supabase, BlogPost, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, BlogPost, isSupabaseConfigured, safeDbQuery } from '../lib/supabase';
 
 const categories = ['All', 'Guides', 'Maintenance', 'Tech Trends', 'Technical', 'ROI', 'Sustainability', 'News'];
 
@@ -28,11 +28,17 @@ export default function Blog() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
+      const { data, error } = await safeDbQuery<BlogPost[]>(
+        () => supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false }),
+        () => supabase
+          .from('blog_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+      );
 
       if (error) throw error;
       setPosts(data || []);

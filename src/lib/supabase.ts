@@ -99,6 +99,7 @@ export type Project = {
   };
   is_deleted: boolean;
   created_at: string;
+  category?: string;
 };
 
 export type BlogPost = {
@@ -156,3 +157,104 @@ export type Testimonial = {
   project_type: string;
   created_at: string;
 };
+
+/**
+ * Safely executes a Supabase query builder.
+ * If the main query fails with "column does not exist" (code 42703 or PGRST204),
+ * it falls back to the secondary query and filters the array client-side (if applicable).
+ */
+export async function safeDbQuery<T = any>(
+  mainQueryFn: () => any,
+  fallbackQueryFn: () => any
+): Promise<any> {
+  try {
+    const result = await mainQueryFn();
+    if (result.error && (result.error.code === '42703' || result.error.code === 'PGRST204')) {
+      const fallbackResult = await fallbackQueryFn();
+      if (!fallbackResult.error) {
+        if (fallbackResult.data && Array.isArray(fallbackResult.data)) {
+          const filtered = fallbackResult.data.filter((item: any) => item.is_deleted !== true);
+          return { data: filtered, error: null, count: fallbackResult.count };
+        }
+        return fallbackResult;
+      }
+      return fallbackResult;
+    }
+    return result;
+  } catch (err) {
+    console.error(`Exception in safeDbQuery:`, err);
+    return await fallbackQueryFn();
+  }
+}
+
+/**
+ * Safely updates a record. If the table doesn't have the specified update columns
+ * (e.g. is_deleted fails with error 42703 or PGRST204), it falls back to alternative columns.
+ */
+export async function safeDbUpdate<T>(
+  tableName: string,
+  id: string,
+  updates: Record<string, any>,
+  fallbackUpdates?: Record<string, any>
+): Promise<{ data: T[] | null; error: any }> {
+  try {
+    const query = supabase.from(tableName).update(updates).eq('id', id);
+    const { data, error } = await (query.select ? query.select() : query);
+    
+    if (error && (error.code === '42703' || error.code === 'PGRST204') && fallbackUpdates) {
+      const fallbackQuery = supabase.from(tableName).update(fallbackUpdates).eq('id', id);
+      return await (fallbackQuery.select ? fallbackQuery.select() : fallbackQuery);
+    }
+    return { data: data as T[] | null, error };
+  } catch (err) {
+    console.error(`Exception in safeDbUpdate:`, err);
+    if (fallbackUpdates) {
+      const fallbackQuery = supabase.from(tableName).update(fallbackUpdates).eq('id', id);
+      return await (fallbackQuery.select ? fallbackQuery.select() : fallbackQuery);
+    }
+    return { data: null, error: err as any };
+  }
+}
+
+/**
+ * Safely soft-deletes or hard-deletes a record if the soft-delete column (like is_deleted)
+ * doesn't exist on the table.
+ */
+export async function safeDbDelete(
+  tableName: string,
+  id: string,
+  fallbackToHardDelete: boolean = true
+): Promise<{ error: any }> {
+  try {
+    const { error } = await supabase.from(tableName).update({ is_deleted: true }).eq('id', id);
+    if (error && (error.code === '42703' || error.code === 'PGRST204') && fallbackToHardDelete) {
+      return await supabase.from(tableName).delete().eq('id', id);
+    }
+    return { error };
+  } catch (err) {
+    console.error(`Exception in safeDbDelete:`, err);
+    return { error: err };
+  }
+}
+
+/**
+ * Safely soft-deletes or hard-deletes multiple records by ID.
+ */
+export async function safeDbBulkDelete(
+  tableName: string,
+  ids: string[],
+  fallbackToHardDelete: boolean = true
+): Promise<{ error: any }> {
+  try {
+    const { error } = await supabase.from(tableName).update({ is_deleted: true }).in('id', ids);
+    if (error && (error.code === '42703' || error.code === 'PGRST204') && fallbackToHardDelete) {
+      return await supabase.from(tableName).delete().in('id', ids);
+    }
+    return { error };
+  } catch (err) {
+    console.error(`Exception in safeDbBulkDelete:`, err);
+    return { error: err };
+  }
+}
+
+

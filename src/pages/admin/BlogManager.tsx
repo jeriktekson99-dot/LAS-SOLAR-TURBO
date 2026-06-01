@@ -13,7 +13,7 @@ import {
   Loader2,
   Inbox
 } from 'lucide-react';
-import { supabase, BlogPost, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, BlogPost, isSupabaseConfigured, safeDbQuery, safeDbDelete, safeDbBulkDelete } from '../../lib/supabase';
 import BlogModal from '../../components/admin/BlogModal';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 
@@ -50,24 +50,38 @@ export default function AdminBlogManager() {
         if (selectedPosts.length === 0) return;
         
         if (!isSupabaseConfigured) {
-          setPosts(posts.filter(p => !selectedPosts.includes(p.id)));
+          const localSt = localStorage.getItem('las_solar_blog_posts_fallback');
+          let currentPosts = localSt ? JSON.parse(localSt) : [];
+          currentPosts = currentPosts.map((p: any) => 
+            selectedPosts.includes(p.id) ? { ...p, is_deleted: true } : p
+          );
+          localStorage.setItem('las_solar_blog_posts_fallback', JSON.stringify(currentPosts));
+          setPosts(currentPosts.filter((p: any) => !p.is_deleted));
         } else {
-          const { error } = await supabase
-            .from('blog_posts')
-            .update({ is_deleted: true })
-            .in('id', selectedPosts);
+          const { error } = await safeDbBulkDelete('blog_posts', selectedPosts);
           if (error) throw error;
           setPosts(posts.filter(p => !selectedPosts.includes(p.id)));
         }
         setSelectedPosts([]);
       } else if (bulkActionType === 'all') {
         if (!isSupabaseConfigured) {
+          const localSt = localStorage.getItem('las_solar_blog_posts_fallback');
+          let currentPosts = localSt ? JSON.parse(localSt) : [];
+          currentPosts = currentPosts.map((p: any) => ({ ...p, is_deleted: true }));
+          localStorage.setItem('las_solar_blog_posts_fallback', JSON.stringify(currentPosts));
           setPosts([]);
         } else {
-          const { error } = await supabase
+          let { error } = await supabase
             .from('blog_posts')
             .update({ is_deleted: true })
-            .eq('is_deleted', false);
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+          if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+            const fallbackResult = await supabase
+              .from('blog_posts')
+              .delete()
+              .neq('id', '00000000-0000-0000-0000-000000000000');
+            error = fallbackResult.error;
+          }
           if (error) throw error;
           setPosts([]);
         }
@@ -84,16 +98,53 @@ export default function AdminBlogManager() {
 
   const fetchPosts = async () => {
     if (!isSupabaseConfigured) {
+      setLoading(true);
+      const localSt = localStorage.getItem('las_solar_blog_posts_fallback');
+      if (localSt) {
+        setPosts(JSON.parse(localSt).filter((p: any) => !p.is_deleted));
+      } else {
+        const demoPosts: BlogPost[] = [
+          {
+            id: 'b-demo-1',
+            title: 'Why Solar is a Long Term Investment in the Philippines',
+            content: '<p>Solar energy is expanding rapidly in Cavite and across the Philippines. With high retail electricity rates, switching to solar provides excellent financial yields over 25+ years.</p>',
+            category: 'Solar Guides',
+            author_name: 'Engr. L. A. Santos',
+            author_role: 'Solar Systems Engineer',
+            author_avatar: 'https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO',
+            read_time: '5 min read',
+            image_url: 'https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO',
+            views: 320,
+            created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+            is_deleted: false
+          },
+          {
+            id: 'b-demo-2',
+            title: 'Grid-Tied vs Hybrid Solar Systems Explained',
+            content: '<p>Which system is right for your home? We compare battery-backed Hybrid systems against high-saving Grid-Tied systems of Cavite homes.</p>',
+            category: 'Tech Updates',
+            author_name: 'Engr. L. A. Santos',
+            author_role: 'Solar Systems Engineer',
+            author_avatar: 'https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO',
+            read_time: '4 min read',
+            image_url: 'https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO',
+            views: 180,
+            created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+            is_deleted: false
+          }
+        ];
+        localStorage.setItem('las_solar_blog_posts_fallback', JSON.stringify(demoPosts));
+        setPosts(demoPosts);
+      }
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
+      const { data, error } = await safeDbQuery<BlogPost[]>(
+        () => supabase.from('blog_posts').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+        () => supabase.from('blog_posts').select('*').order('created_at', { ascending: false })
+      );
 
       if (error) throw error;
       setPosts(data || []);
@@ -118,10 +169,19 @@ export default function AdminBlogManager() {
     if (!postToDelete) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('blog_posts')
-        .update({ is_deleted: true })
-        .eq('id', postToDelete);
+      if (!isSupabaseConfigured) {
+        const localSt = localStorage.getItem('las_solar_blog_posts_fallback');
+        let currentPosts = localSt ? JSON.parse(localSt) : [];
+        currentPosts = currentPosts.map((p: any) => 
+          p.id === postToDelete ? { ...p, is_deleted: true } : p
+        );
+        localStorage.setItem('las_solar_blog_posts_fallback', JSON.stringify(currentPosts));
+        setPosts(currentPosts.filter((p: any) => !p.is_deleted));
+        setPostToDelete(null);
+        setIsDeleting(false);
+        return;
+      }
+      const { error } = await safeDbDelete('blog_posts', postToDelete);
 
       if (error) throw error;
       setPosts(posts.filter(p => p.id !== postToDelete));

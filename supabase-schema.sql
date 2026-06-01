@@ -89,6 +89,7 @@ BEGIN
       timeline TEXT,
       bill_url TEXT,
       status TEXT DEFAULT 'New' CHECK (status IN ('New', 'Contacted', 'In Progress', 'Archived')),
+      is_deleted BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
   ELSE
@@ -141,6 +142,10 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='leads' AND column_name='status') THEN
       ALTER TABLE leads ADD COLUMN status TEXT DEFAULT 'New';
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='leads' AND column_name='is_deleted') THEN
+      ALTER TABLE leads ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+    END IF;
   END IF;
 END $$;
 
@@ -152,11 +157,16 @@ BEGIN
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       email TEXT UNIQUE NOT NULL,
       source TEXT,
+      is_deleted BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
   ELSE
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subscribers' AND column_name='source') THEN
       ALTER TABLE subscribers ADD COLUMN source TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subscribers' AND column_name='is_deleted') THEN
+      ALTER TABLE subscribers ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
     END IF;
   END IF;
 END $$;

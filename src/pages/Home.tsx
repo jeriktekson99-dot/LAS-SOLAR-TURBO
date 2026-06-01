@@ -25,7 +25,7 @@ import QuoteForm from '../components/QuoteForm';
 const heroImage = "https://scontent-mnl3-2.xx.fbcdn.net/v/t39.30808-6/706990468_122112663986816956_8363561635734656007_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=107&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeHl3sd3OnfY7ha9hjt4ID60wxVwGX_1uH_DFXAZf_W4f7FgQWSU09gy4xGu6kLyAP3SSB6HDEwCYksETDMvB9qR&_nc_ohc=rMAuKZZAXmsQ7kNvwE2LGTN&_nc_oc=Adq0b0DChadyCHpq-b1JC6fgzuL1bceAi_bMRccySkJWsT4cQ2rYIH3ZBOJEEDsFnjQ&_nc_zt=23&_nc_ht=scontent-mnl3-2.xx&_nc_gid=h2xLxs6A_6iZXHSev_b8FA&_nc_ss=7b2a8&oh=00_Af-zkl9GfridF9ehCwhv4xPh3XHf1VB94-nKdwv81dNv8Q&oe=6A21D4E7";
 import problemImage from '../assets/images/regenerated_image_1780214689573.jpg';
 import greenTomorrowImage from '../assets/images/regenerated_image_1780214695765.jpg';
-import { supabase, Project, isSupabaseConfigured, Testimonial } from '../lib/supabase';
+import { supabase, Project, isSupabaseConfigured, Testimonial, safeDbQuery } from '../lib/supabase';
 
 const HARDWARE_PARTNERS = [
   {
@@ -146,6 +146,13 @@ export default function Home() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const testimonialImages = [
+    "https://lh3.googleusercontent.com/d/19GogkETvt0kZfiinnBpZXA2jJUjqiIrk",
+    "https://lh3.googleusercontent.com/d/1MafZSpf7MGbkj8UiMH6iS3AgSDnabfaz",
+    "https://lh3.googleusercontent.com/d/1ElHxHW9NufFErC4Oa8mmIRoypydaTc24",
+    "https://lh3.googleusercontent.com/d/1pG4iZbuTizZahW40qS0RjQwqsjx9miiO"
+  ];
+
   useEffect(() => {
     loadHomeData();
   }, []);
@@ -158,12 +165,19 @@ export default function Home() {
 
     try {
       const [projRes, testRes] = await Promise.all([
-        supabase
-          .from('projects')
-          .select('*')
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false })
-          .limit(5),
+        safeDbQuery(
+          () => supabase
+            .from('projects')
+            .select('*')
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(5),
+          () => supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5)
+        ),
         supabase
           .from('testimonials')
           .select('*')
@@ -227,10 +241,18 @@ export default function Home() {
 
               {/* Avatar Social Proof - Clean Style */}
               <div className="flex items-center gap-6 mb-8">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-12 h-12 rounded-full border-2 border-black overflow-hidden ring-2 ring-transparent">
-                      <img src={`https://i.pravatar.cc/100?img=${i+20}`} alt="User" />
+                <div className="flex -space-x-4">
+                  {testimonialImages.map((imgUrl, i) => (
+                    <div 
+                      key={i} 
+                      className="w-12 h-12 rounded-full border-2 border-slate-950 overflow-hidden relative shadow-lg hover:z-10 transition-transform"
+                    >
+                      <img 
+                        src={imgUrl} 
+                        alt={`Client review ${i + 1}`} 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
                   ))}
                 </div>

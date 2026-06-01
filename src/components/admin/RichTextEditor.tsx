@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -169,6 +170,13 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
       },
     },
   });
+
+  // Keep editor content in sync with external changes, but avoid resetting while typing
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
 
   return (
     <div className="w-full rounded-xl border border-slate-200 overflow-hidden focus-within:border-black transition-all">

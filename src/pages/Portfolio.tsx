@@ -4,31 +4,51 @@ import { Link } from 'react-router-dom';
 import PageHero from '../components/common/PageHero';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import CTASection from '../components/common/CTASection';
-import { supabase, Project, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, Project, isSupabaseConfigured, safeDbQuery } from '../lib/supabase';
 
-const infraOptions = [
-  'All Infrastructure',
-  'Agriculture',
-  'Healthcare',
-  'Education',
-  'Resorts and Leisure',
-  'Multi-Family Housing',
-  'Warehousing and Distribution'
-];
+export function getProjectCategory(p: any): 'Residential' | 'Commercial' | 'Industrial' {
+  if (p.category) {
+    const cat = p.category.toLowerCase();
+    if (cat.includes('residential')) return 'Residential';
+    if (cat.includes('commercial')) return 'Commercial';
+    if (cat.includes('industrial')) return 'Industrial';
+  }
 
-const serviceOptions = [
-  'All Services',
-  'Residential Solar',
-  'Commercial Solar',
-  'Net-Metering',
-  'Maintenance & Support'
-];
+  // Fallback heuristic classification
+  const title = (p.title || '').toLowerCase();
+  const overview = (p.overview_content || '').toLowerCase();
+  const sizeNum = parseFloat(p.system_size) || 0;
+
+  if (
+    title.includes('industrial') || 
+    title.includes('factory') || 
+    overview.includes('industrial') || 
+    overview.includes('factory') ||
+    overview.includes('manufacturing') ||
+    sizeNum >= 50
+  ) {
+    return 'Industrial';
+  }
+
+  if (
+    title.includes('commercial') || 
+    title.includes('warehouse') || 
+    overview.includes('commercial') || 
+    overview.includes('warehouse') ||
+    overview.includes('mall') ||
+    overview.includes('office') ||
+    sizeNum >= 15
+  ) {
+    return 'Commercial';
+  }
+
+  return 'Residential';
+}
 
 export default function Portfolio() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [infraFilter, setInfraFilter] = useState('All Infrastructure');
-  const [serviceFilter, setServiceFilter] = useState('All Services');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 4;
 
@@ -43,11 +63,17 @@ export default function Portfolio() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('completed_at', { ascending: false });
+      const { data, error } = await safeDbQuery<Project[]>(
+        () => supabase
+          .from('projects')
+          .select('*')
+          .eq('is_deleted', false)
+          .order('completed_at', { ascending: false }),
+        () => supabase
+          .from('projects')
+          .select('*')
+          .order('completed_at', { ascending: false })
+      );
 
       if (error) throw error;
       setProjects(data || []);
@@ -60,13 +86,10 @@ export default function Portfolio() {
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
-      // In Supabase we use system_size or other fields for infrastructure if needed
-      // For now we'll match by title or other logic if infrastructure field is added
-      // Or we can just show all since the schema doesn't have 'infrastructure' and 'service' explicitly
-      // Wait, I should add them to schema if I want to keep the filters
-      return true; 
+      const cat = getProjectCategory(p);
+      return selectedCategory === 'All' || cat === selectedCategory;
     });
-  }, [projects]);
+  }, [projects, selectedCategory]);
 
   const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
   const paginatedProjects = filteredProjects.slice(
@@ -90,30 +113,34 @@ export default function Portfolio() {
 
       <section className="py-24 bg-white">
         <div className="container mx-auto px-6">
-          {/* Dual Dropdown Filter Bar */}
-          <div className="flex flex-col md:flex-row items-center gap-16 mb-20 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-            <div className="w-full md:w-1/2">
-              <label className="block text-black font-bold uppercase tracking-widest text-[10px] mb-3 ml-2">Infrastructure</label>
-              <select 
-                value={infraFilter}
-                onChange={(e) => setInfraFilter(e.target.value)}
-                className="w-full bg-white border border-slate-200 text-black py-4 px-6 rounded-2xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none appearance-none cursor-pointer font-bold uppercase tracking-tight text-sm"
-              >
-                {infraOptions.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
+          {/* Category Filter Bar */}
+          <div className="flex flex-col items-center justify-center mb-16 space-y-4">
+            <div className="hidden md:flex items-center gap-2 bg-slate-50 p-2 border border-slate-100 rounded-2xl">
+              {['All', 'Residential', 'Commercial', 'Industrial'].map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => { setSelectedCategory(cat); setCurrentPage(1); }}
+                  className={`px-8 py-3 rounded-xl font-display font-black text-xs uppercase tracking-widest transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-app-purple text-white shadow-xl shadow-app-purple/20'
+                      : 'text-slate-400 hover:text-black hover:bg-slate-100/50'
+                  }`}
+                >
+                  {cat === 'All' ? 'All Systems' : `${cat} Systems`}
+                </button>
+              ))}
             </div>
-            <div className="w-full md:w-1/2">
-              <label className="block text-black font-bold uppercase tracking-widest text-[10px] mb-3 ml-2">Service Type</label>
+            <div className="w-full md:hidden">
+              <label className="block text-black font-bold uppercase tracking-widest text-[10px] mb-3 ml-2 text-center">Category</label>
               <select 
-                value={serviceFilter}
-                onChange={(e) => setServiceFilter(e.target.value)}
-                className="w-full bg-white border border-slate-200 text-black py-4 px-6 rounded-2xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none appearance-none cursor-pointer font-bold uppercase tracking-tight text-sm"
+                value={selectedCategory}
+                onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-slate-50 border border-slate-200 text-black py-4 px-6 rounded-2xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none cursor-pointer font-black uppercase tracking-tight text-sm text-center"
               >
-                {serviceOptions.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
+                <option value="All">All Systems</option>
+                <option value="Residential">Residential Systems</option>
+                <option value="Commercial">Commercial Systems</option>
+                <option value="Industrial">Industrial Systems</option>
               </select>
             </div>
           </div>
@@ -163,6 +190,9 @@ export default function Portfolio() {
                         <span className="bg-slate-100 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
                           {project.inverter_type}
                         </span>
+                        <span className="bg-purple-100/50 text-app-purple border border-purple-200/40 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap ml-auto">
+                          {getProjectCategory(project)}
+                        </span>
                       </div>
                       
                       <div className="w-full min-w-0">
@@ -180,7 +210,7 @@ export default function Portfolio() {
               <div className="col-span-full py-20 text-center">
                 <p className="text-slate-400 text-xl font-light italic">No projects found matching these criteria.</p>
                 <button 
-                  onClick={() => { setInfraFilter('All Infrastructure'); setServiceFilter('All Services'); setCurrentPage(1); }}
+                  onClick={() => { setSelectedCategory('All'); setCurrentPage(1); }}
                   className="mt-6 text-app-purple font-bold uppercase tracking-widest text-sm hover:underline"
                 >
                   Clear Filters

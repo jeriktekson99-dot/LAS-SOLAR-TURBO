@@ -122,7 +122,23 @@ const calculateResultsForBill = (billVal: number) => {
 const generatePDFForForm = (name: string, email: string, phone: string, billBracket: string) => {
   const doc = new jsPDF();
   const date = new Date().toLocaleDateString();
-  const billVal = getBillFromBracket(billBracket);
+  
+  let billVal = getBillFromBracket(billBracket);
+  let billLabel = 'Assessed Midpoint Bill Factor';
+  
+  const stored = localStorage.getItem('las_solar_calculator_context');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed.bill && typeof parsed.bill === 'number') {
+        billVal = parsed.bill;
+        billLabel = 'Average Monthly Electric Bill (Calculator)';
+      }
+    } catch (e) {
+      console.error('Error parsing calculator context', e);
+    }
+  }
+
   const results = calculateResultsForBill(billVal);
   
   // Top Accent colored bar (Deep Purple #8A2BE2)
@@ -216,7 +232,7 @@ const generatePDFForForm = (name: string, email: string, phone: string, billBrac
     head: [['Assessment Metric', 'Strategic Target Valuation']],
     body: [
        ['Avg. Monthly Bill Range (Form Chosen)', `${cleanBillBracket}`],
-       ['Assessed Midpoint Bill Factor', `PHP ${billVal.toLocaleString()}`],
+       [billLabel, `PHP ${billVal.toLocaleString()}`],
        ['Tariff / Electricity Rate', `PHP 15/kWh`],
        ['Recommended Solar Ingress Size', `${results.targetSystemSizeKwp.toFixed(2)} kWp`],
        ['Estimated Monocrystalline Panel Array (620W)', `${results.panelsNeeded} Solar Modules`],

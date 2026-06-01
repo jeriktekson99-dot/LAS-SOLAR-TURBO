@@ -12,9 +12,48 @@ import {
   Eye,
   Inbox
 } from 'lucide-react';
-import { supabase, Project, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, Project, isSupabaseConfigured, safeDbQuery, safeDbDelete, safeDbBulkDelete } from '../../lib/supabase';
 import ProjectModal from '../../components/admin/ProjectModal';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
+
+export function getProjectCategory(p: any): 'Residential' | 'Commercial' | 'Industrial' {
+  if (p.category) {
+    const cat = p.category.toLowerCase();
+    if (cat.includes('residential')) return 'Residential';
+    if (cat.includes('commercial')) return 'Commercial';
+    if (cat.includes('industrial')) return 'Industrial';
+  }
+
+  // Fallback heuristic classification
+  const title = (p.title || '').toLowerCase();
+  const overview = (p.overview_content || '').toLowerCase();
+  const sizeNum = parseFloat(p.system_size) || 0;
+
+  if (
+    title.includes('industrial') || 
+    title.includes('factory') || 
+    overview.includes('industrial') || 
+    overview.includes('factory') ||
+    overview.includes('manufacturing') ||
+    sizeNum >= 50
+  ) {
+    return 'Industrial';
+  }
+
+  if (
+    title.includes('commercial') || 
+    title.includes('warehouse') || 
+    overview.includes('commercial') || 
+    overview.includes('warehouse') ||
+    overview.includes('mall') ||
+    overview.includes('office') ||
+    sizeNum >= 15
+  ) {
+    return 'Commercial';
+  }
+
+  return 'Residential';
+}
 
 export default function AdminPortfolioManager() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -48,24 +87,38 @@ export default function AdminPortfolioManager() {
         if (selectedProjects.length === 0) return;
         
         if (!isSupabaseConfigured) {
-          setProjects(projects.filter(p => !selectedProjects.includes(p.id)));
+          const localSt = localStorage.getItem('las_solar_projects_fallback');
+          let currentProjects = localSt ? JSON.parse(localSt) : [];
+          currentProjects = currentProjects.map((p: any) => 
+            selectedProjects.includes(p.id) ? { ...p, is_deleted: true } : p
+          );
+          localStorage.setItem('las_solar_projects_fallback', JSON.stringify(currentProjects));
+          setProjects(currentProjects.filter((p: any) => !p.is_deleted));
         } else {
-          const { error } = await supabase
-            .from('projects')
-            .update({ is_deleted: true })
-            .in('id', selectedProjects);
+          const { error } = await safeDbBulkDelete('projects', selectedProjects);
           if (error) throw error;
           setProjects(projects.filter(p => !selectedProjects.includes(p.id)));
         }
         setSelectedProjects([]);
       } else if (bulkActionType === 'all') {
         if (!isSupabaseConfigured) {
+          const localSt = localStorage.getItem('las_solar_projects_fallback');
+          let currentProjects = localSt ? JSON.parse(localSt) : [];
+          currentProjects = currentProjects.map((p: any) => ({ ...p, is_deleted: true }));
+          localStorage.setItem('las_solar_projects_fallback', JSON.stringify(currentProjects));
           setProjects([]);
         } else {
-          const { error } = await supabase
+          let { error } = await supabase
             .from('projects')
             .update({ is_deleted: true })
-            .eq('is_deleted', false);
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+          if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+            const fallbackResult = await supabase
+              .from('projects')
+              .delete()
+              .neq('id', '00000000-0000-0000-0000-000000000000');
+            error = fallbackResult.error;
+          }
           if (error) throw error;
           setProjects([]);
         }
@@ -82,16 +135,61 @@ export default function AdminPortfolioManager() {
 
   const fetchProjects = async () => {
     if (!isSupabaseConfigured) {
+      setLoading(true);
+      const localSt = localStorage.getItem('las_solar_projects_fallback');
+      if (localSt) {
+        setProjects(JSON.parse(localSt).filter((p: any) => !p.is_deleted));
+      } else {
+        const demoProjects: Project[] = [
+          {
+            id: 'p-demo-1',
+            title: '5.2kWp Residential Hybrid Solar Power System',
+            client_name: 'David family residency',
+            location: 'Imus, Cavite',
+            system_size: '5.2 kWp',
+            panel_specs: '10x Jinko 520W Monocrystalline',
+            inverter_type: 'Deye 5kW Hybrid Inverter with Growatt 10kWh Battery storage',
+            estimated_savings: '₱7,200',
+            image_url: 'https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO',
+            thumbnails: ['https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO'],
+            overview_content: 'A high-perfoming residential hybrid system designed to provide uninterrupted backup power during brownouts while dropping monthly bills by 75%.',
+            technical_content: 'Installed on a GI sheet roof with professional aluminum framing, surge protection devices, and automated transfer switches.',
+            status: 'Completed',
+            created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+            completed_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+            is_deleted: false
+          },
+          {
+            id: 'p-demo-2',
+            title: '15kWp Commercial Grid-Tied Solar Installation',
+            client_name: 'Commercial plaza storage warehouse',
+            location: 'Imus, Cavite',
+            system_size: '15 kWp',
+            panel_specs: '28x Jinko 540W Monocrystalline',
+            inverter_type: 'Solis 15kW Grid-Tied Inverter',
+            estimated_savings: '₱22,000',
+            image_url: 'https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO',
+            thumbnails: ['https://lh3.googleusercontent.com/d/1odxn3puWfrPEf2mgoz4JLupNHXlwpvRO'],
+            overview_content: 'An intensive day-use commercial solar setup built to slash active daytime cooling cost overheads.',
+            technical_content: 'Engineered with net-metering configuration to feed back surplus energy to the local co-op provider.',
+            status: 'Completed',
+            created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
+            completed_at: new Date(Date.now() - 86400000 * 12).toISOString(),
+            is_deleted: false
+          }
+        ];
+        localStorage.setItem('las_solar_projects_fallback', JSON.stringify(demoProjects));
+        setProjects(demoProjects);
+      }
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
+      const { data, error } = await safeDbQuery<Project[]>(
+        () => supabase.from('projects').select('*').eq('is_deleted', false).order('created_at', { ascending: false }),
+        () => supabase.from('projects').select('*').order('created_at', { ascending: false })
+      );
 
       if (error) throw error;
       setProjects(data || []);
@@ -116,10 +214,19 @@ export default function AdminPortfolioManager() {
     if (!projectToDelete) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('projects')
-        .update({ is_deleted: true })
-        .eq('id', projectToDelete);
+      if (!isSupabaseConfigured) {
+        const localSt = localStorage.getItem('las_solar_projects_fallback');
+        let currentProjects = localSt ? JSON.parse(localSt) : [];
+        currentProjects = currentProjects.map((p: any) => 
+          p.id === projectToDelete ? { ...p, is_deleted: true } : p
+        );
+        localStorage.setItem('las_solar_projects_fallback', JSON.stringify(currentProjects));
+        setProjects(currentProjects.filter((p: any) => !p.is_deleted));
+        setProjectToDelete(null);
+        setIsDeleting(false);
+        return;
+      }
+      const { error } = await safeDbDelete('projects', projectToDelete);
 
       if (error) throw error;
       setProjects(projects.filter(p => p.id !== projectToDelete));
@@ -140,30 +247,7 @@ export default function AdminPortfolioManager() {
       (p.location || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     // 2. Category match
-    let matchesCategory = true;
-    if (filterCategory === 'Residential') {
-      const isCom = (p.title || '').toLowerCase().includes('factory') || 
-                    (p.title || '').toLowerCase().includes('commercial') ||
-                    (p.overview_content || '').toLowerCase().includes('warehouse') ||
-                    (p.overview_content || '').toLowerCase().includes('factory');
-      const sizeNum = parseFloat(p.system_size) || 0;
-      matchesCategory = !isCom && (sizeNum < 15 || (p.overview_content || '').toLowerCase().includes('residential'));
-    } else if (filterCategory === 'Commercial') {
-      const isCom = (p.title || '').toLowerCase().includes('factory') || 
-                    (p.title || '').toLowerCase().includes('commercial') ||
-                    (p.overview_content || '').toLowerCase().includes('warehouse') ||
-                    (p.overview_content || '').toLowerCase().includes('factory');
-      const sizeNum = parseFloat(p.system_size) || 0;
-      matchesCategory = isCom || sizeNum >= 15;
-    } else if (filterCategory === 'Hybrid') {
-      matchesCategory = (p.inverter_type || '').toLowerCase().includes('hybrid') ||
-                        (p.system_size || '').toLowerCase().includes('hybrid') ||
-                        (p.title || '').toLowerCase().includes('hybrid');
-    } else if (filterCategory === 'Grid-Tie') {
-      matchesCategory = (p.inverter_type || '').toLowerCase().includes('grid') ||
-                        (p.system_size || '').toLowerCase().includes('grid') ||
-                        (p.title || '').toLowerCase().includes('grid');
-    }
+    const matchesCategory = filterCategory === 'All' || getProjectCategory(p) === filterCategory;
 
     // 4. Location match
     let matchesLoc = true;
@@ -293,8 +377,7 @@ export default function AdminPortfolioManager() {
               <option value="All">All Categories</option>
               <option value="Residential">Residential Systems</option>
               <option value="Commercial">Commercial Systems</option>
-              <option value="Hybrid">Hybrid Inverters</option>
-              <option value="Grid-Tie">Grid-Tie Inverters</option>
+              <option value="Industrial">Industrial Systems</option>
             </select>
           </div>
           <div>
@@ -399,7 +482,11 @@ export default function AdminPortfolioManager() {
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-black group-hover:text-app-purple transition-colors truncate max-w-xs">{project.title}</span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-xs">{project.client_name}</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-xs">{project.client_name}</span>
+                          <span className="h-2 w-2 rounded-full bg-slate-300"></span>
+                          <span className="text-[9px] font-black text-app-purple uppercase tracking-widest bg-purple-50 px-1.5 py-0.5 rounded">{getProjectCategory(project)}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-8 py-6">

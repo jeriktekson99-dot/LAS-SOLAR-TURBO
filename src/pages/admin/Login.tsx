@@ -14,7 +14,7 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setError('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your project Settings.');
+      setError('⚡ Running in local offline demo mode. You can sign in using any email and password.');
       return;
     }
     
@@ -31,12 +31,17 @@ export default function AdminLogin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isSupabaseConfigured) {
-      setError('Cannot sign in: Supabase configuration is missing in Settings.');
-      return;
-    }
     setLoading(true);
     setError('');
+
+    if (!isSupabaseConfigured) {
+      setTimeout(() => {
+        localStorage.setItem('dummy_admin_token', 'offline-demo-token-123');
+        setLoading(false);
+        navigate('/admin/dashboard');
+      }, 500);
+      return;
+    }
 
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({
@@ -62,7 +67,7 @@ export default function AdminLogin() {
       {/* Exit Button */}
       <Link 
         to="/" 
-        className="fixed top-4 left-4 lg:left-auto lg:right-6 z-50 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors bg-white/80 backdrop-blur-sm px-4 py-1.5 rounded-full border border-slate-100 shadow-sm"
+        className="absolute top-6 left-6 lg:left-auto lg:right-8 lg:top-8 z-50 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors bg-white/85 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200/60 shadow-sm"
       >
         <ArrowLeft size={14} />
         Back to Website
@@ -98,7 +103,7 @@ export default function AdminLogin() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md my-auto py-4"
+          className="w-full max-w-md my-auto py-4 mt-20 lg:mt-0"
         >
           <div className="flex flex-col items-start mb-6 lg:mb-8">
             <h1 className="text-2xl font-display font-black text-black uppercase tracking-tight">Admin Portal</h1>

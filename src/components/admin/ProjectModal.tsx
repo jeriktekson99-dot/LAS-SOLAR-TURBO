@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Loader2, Trash2, Plus } from 'lucide-react';
-import { supabase, Project, uploadImage } from '../../lib/supabase';
+import { supabase, Project, uploadImage, isSupabaseConfigured } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
 
 interface ProjectModalProps {
@@ -15,26 +15,54 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [formData, setFormData] = useState<Partial<Project>>({
-    title: '',
-    client_name: '',
-    location: '',
-    system_size: '',
-    panel_specs: '',
-    inverter_type: '',
-    estimated_savings: '',
-    image_url: '',
-    thumbnails: [],
-    overview_content: '',
-    technical_content: '',
-    status: 'Completed',
-    personnel: {
-      members: [{ name: '', title: '' }]
+  const [formData, setFormData] = useState<Partial<Project>>(() => {
+    if (project) {
+      const existingMembers = project.personnel?.members;
+      let initialMembers: { name: string; title: string }[] = [];
+      if (Array.isArray(existingMembers)) {
+        initialMembers = [...existingMembers];
+      } else {
+        if (project.personnel?.engineer?.name) {
+          initialMembers.push({ name: project.personnel.engineer.name, title: project.personnel.engineer.title || 'Systems Engineer' });
+        }
+        if (project.personnel?.installer?.name) {
+          initialMembers.push({ name: project.personnel.installer.name, title: project.personnel.installer.title || 'Master Installer' });
+        }
+      }
+      if (initialMembers.length === 0) {
+        initialMembers = [{ name: '', title: '' }];
+      }
+      return {
+        ...project,
+        category: project.category || 'Residential',
+        personnel: {
+          ...project.personnel,
+          members: initialMembers
+        }
+      };
     }
+    return {
+      title: '',
+      client_name: '',
+      location: '',
+      system_size: '',
+      panel_specs: '',
+      inverter_type: '',
+      estimated_savings: '',
+      image_url: '',
+      thumbnails: [],
+      overview_content: '',
+      technical_content: '',
+      status: 'Completed',
+      category: 'Residential',
+      personnel: {
+        members: [{ name: '', title: '' }]
+      }
+    };
   });
 
   useEffect(() => {
-    if (project) {
+    if (project && project.id !== formData.id) {
       const existingMembers = project.personnel?.members;
       let initialMembers: { name: string; title: string }[] = [];
       if (Array.isArray(existingMembers)) {
@@ -52,12 +80,13 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
       }
       setFormData({
         ...project,
+        category: project.category || 'Residential',
         personnel: {
           ...project.personnel,
           members: initialMembers
         }
       });
-    } else {
+    } else if (!project && formData.id) {
       setFormData({
         title: '',
         client_name: '',
@@ -71,6 +100,7 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
         overview_content: '',
         technical_content: '',
         status: 'Completed',
+        category: 'Residential',
         personnel: {
           members: [{ name: '', title: '' }]
         }
@@ -100,6 +130,8 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
       alert('Failed to upload images.');
     } finally {
       setUploading(false);
+      // Reset input value so the same file(s) can be selected/uploaded again
+      e.target.value = '';
     }
   };
 
@@ -189,6 +221,29 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
     setLoading(true);
 
     try {
+      if (!isSupabaseConfigured) {
+        const localSt = localStorage.getItem('las_solar_projects_fallback');
+        let currentProjects = localSt ? JSON.parse(localSt) : [];
+        if (project?.id) {
+          currentProjects = currentProjects.map((p: any) => 
+            p.id === project.id ? { ...p, ...formData, updated_at: new Date().toISOString() } : p
+          );
+        } else {
+          const newProject = {
+            ...formData,
+            id: `local-project-${Date.now()}`,
+            created_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+            is_deleted: false
+          };
+          currentProjects.unshift(newProject);
+        }
+        localStorage.setItem('las_solar_projects_fallback', JSON.stringify(currentProjects));
+        onSave();
+        onClose();
+        return;
+      }
+
       if (project?.id) {
         const { error } = await supabase
           .from('projects')
@@ -332,6 +387,19 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
                   onChange={e => setFormData({ ...formData, location: e.target.value })}
                   required
                 />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Project Category</span>
+                <select 
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-app-purple focus:outline-none transition-all text-sm font-bold bg-white"
+                  value={formData.category || 'Residential'}
+                  onChange={e => setFormData({ ...formData, category: e.target.value })}
+                  required
+                >
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Industrial">Industrial</option>
+                </select>
               </label>
             </div>
 
