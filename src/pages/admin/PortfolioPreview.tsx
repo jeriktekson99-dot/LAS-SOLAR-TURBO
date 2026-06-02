@@ -215,7 +215,7 @@ export default function AdminPortfolioPreview() {
               <div className="space-y-6">
                 <div className="rounded-[2.5rem] overflow-hidden shadow-md relative aspect-video max-h-[500px] bg-slate-100">
                   <img 
-                    src={activeImage || project.image_url} 
+                    src={activeImage || project.image_url || undefined} 
                     alt={project.title} 
                     className="absolute inset-0 w-full h-full object-cover transition-all duration-500" 
                     referrerPolicy="no-referrer"
@@ -230,7 +230,7 @@ export default function AdminPortfolioPreview() {
                         onClick={() => setActiveImage(thumb)}
                         className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${activeImage === thumb ? 'border-app-purple scale-95' : 'border-transparent hover:border-black'}`}
                       >
-                        <img src={thumb} alt="Gallery" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src={thumb || undefined} alt="Gallery" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                     ))}
                   </div>

@@ -662,7 +662,7 @@ export default function Home() {
                     >
                         <NavLink to={`/portfolio/${p.id}`}>
                           <img 
-                              src={p.thumbnails?.[0] || 'https://images.unsplash.com/photo-1513694490325-c4d720af21be?auto=format&fit=crop&q=80&w=1000'} 
+                              src={p.image_url || p.thumbnails?.[0] || 'https://images.unsplash.com/photo-1513694490325-c4d720af21be?auto=format&fit=crop&q=80&w=1000'} 
                               alt={p.title} 
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                               referrerPolicy="no-referrer"

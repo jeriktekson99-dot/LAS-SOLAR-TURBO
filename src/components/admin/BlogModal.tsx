@@ -193,7 +193,7 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
                     />
                     {formData.image_url && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg overflow-hidden border">
-                        <img src={formData.image_url} className="w-full h-full object-cover" />
+                        <img src={formData.image_url || undefined} className="w-full h-full object-cover" />
                       </div>
                     )}
                   </div>
