@@ -183,7 +183,7 @@ export default function Portfolio() {
                     {/* Image Container with fixed ratio */}
                     <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl aspect-[16/10] mb-8">
                       <img
-                        src={project.image_url}
+                        src={project.image_url || null}
                         alt={project.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-in-out"
                         referrerPolicy="no-referrer"

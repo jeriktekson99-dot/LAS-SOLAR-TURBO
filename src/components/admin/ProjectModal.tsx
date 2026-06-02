@@ -328,7 +328,7 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
               {/* Main Image */}
               {formData.image_url ? (
                 <div className="relative aspect-square rounded-2xl overflow-hidden border-4 border-app-purple group">
-                  <img src={formData.image_url || undefined} alt="Main" className="w-full h-full object-cover" />
+                  <img src={formData.image_url || null} alt="Main" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button type="button" onClick={() => removeImage(-1, true)} className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
                       <Trash2 size={16} />
@@ -350,7 +350,7 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
               {/* Thumbnails */}
               {formData.thumbnails?.map((thumb, idx) => (
                 <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group border border-slate-100">
-                  <img src={thumb || undefined} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                  <img src={thumb || null} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button type="button" onClick={() => setAsMain(idx)} className="p-2 bg-app-purple text-white rounded-lg hover:bg-white" title="Set as Main">
                       <Plus size={16} />

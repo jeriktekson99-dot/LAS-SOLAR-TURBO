@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -24,25 +24,50 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
+// Keep extensions statically outside the component to bypass duplicate initialization on hot-mounts
+const staticExtensions = [
+  StarterKit.configure(),
+  Underline.configure(),
+  Link.configure({
+    openOnClick: false,
+    HTMLAttributes: {
+      class: 'text-app-purple underline font-bold',
+    },
+  }),
+];
+
 const MenuBar = ({ editor }: { editor: any }) => {
   if (!editor) {
     return null;
   }
 
-  const addLink = () => {
-    const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL', previousUrl);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
 
-    if (url === null) {
-      return;
-    }
-
-    if (url === '') {
+  const handleApplyLink = () => {
+    if (linkUrl.trim() === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
+    } else {
+      let formattedUrl = linkUrl.trim();
+      // Auto prepend https:// if missing a standard protocol/prefix
+      if (!/^https?:\/\//i.test(formattedUrl) && !/^mailto:/i.test(formattedUrl) && !/^tel:/i.test(formattedUrl)) {
+        formattedUrl = `https://${formattedUrl}`;
+      }
+      editor.chain().focus().extendMarkRange('link').setLink({ href: formattedUrl }).run();
     }
+    setShowLinkInput(false);
+  };
 
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  const handleRemoveLink = () => {
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    setShowLinkInput(false);
+  };
+
+  const handleLinkButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const previousUrl = editor.getAttributes('link').href || '';
+    setLinkUrl(previousUrl);
+    setShowLinkInput(true);
   };
 
   const buttons = [
@@ -103,63 +128,118 @@ const MenuBar = ({ editor }: { editor: any }) => {
     {
       icon: LinkIcon,
       title: 'Link',
-      action: addLink,
+      action: () => {}, // Handled separately via handleLinkButtonClick
       isActive: () => editor.isActive('link'),
     },
   ];
 
   return (
-    <div className="flex flex-wrap gap-1 p-2 border-b border-slate-200 bg-slate-50">
-      {buttons.map((btn, i) => (
+    <div className="flex flex-col border-b border-slate-200 bg-slate-50">
+      <div className="flex flex-wrap gap-1 p-2">
+        {buttons.map((btn, i) => (
+          <button
+            key={i}
+            type="button"
+            onMouseDown={(e) => {
+              // Vital safety: prevent default to avoid blurring editor and losing the cursor selection range
+              e.preventDefault();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (btn.title === 'Link') {
+                handleLinkButtonClick(e);
+              } else {
+                btn.action();
+              }
+            }}
+            className={`p-2 rounded-lg transition-all ${
+              btn.isActive() 
+                ? 'bg-app-purple text-white' 
+                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+            }`}
+            title={btn.title}
+          >
+            <btn.icon size={18} />
+          </button>
+        ))}
+        <div className="w-px h-6 bg-slate-200 mx-1 self-center" />
         <button
-          key={i}
           type="button"
-          onClick={btn.action}
-          className={`p-2 rounded-lg transition-all ${
-            btn.isActive() 
-              ? 'bg-app-purple text-white' 
-              : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
-          }`}
-          title={btn.title}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault();
+            editor.chain().focus().undo().run();
+          }}
+          disabled={!editor.can().chain().focus().undo().run()}
+          className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30"
+          title="Undo"
         >
-          <btn.icon size={18} />
+          <Undo size={18} />
         </button>
-      ))}
-      <div className="w-px h-6 bg-slate-200 mx-1 self-center" />
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().undo().run()}
-        disabled={!editor.can().chain().focus().undo().run()}
-        className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30"
-      >
-        <Undo size={18} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().redo().run()}
-        disabled={!editor.can().chain().focus().redo().run()}
-        className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30"
-      >
-        <Redo size={18} />
-      </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault();
+            editor.chain().focus().redo().run();
+          }}
+          disabled={!editor.can().chain().focus().redo().run()}
+          className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30"
+          title="Redo"
+        >
+          <Redo size={18} />
+        </button>
+      </div>
+
+      {showLinkInput && (
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-t border-slate-200 bg-slate-100/60 animation-fade-in animate-in fade-in duration-200">
+          <span className="text-xs font-semibold text-slate-500 animate-none">Insert Link:</span>
+          <input
+            type="text"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="example.com"
+            className="px-2 py-1 text-xs border border-slate-300 rounded-md bg-white text-black focus:outline-none focus:border-app-purple w-48 sm:w-72 shadow-sm animate-none"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleApplyLink();
+              } else if (e.key === 'Escape') {
+                setShowLinkInput(false);
+              }
+            }}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={handleApplyLink}
+            className="px-2.5 py-1 text-xs bg-app-purple text-white rounded-md hover:bg-opacity-95 font-medium transition-colors cursor-pointer animate-none"
+          >
+            Apply
+          </button>
+          <button
+            type="button"
+            onClick={handleRemoveLink}
+            className="px-2.5 py-1 text-xs bg-rose-500 text-white rounded-md hover:bg-rose-600 font-medium transition-colors cursor-pointer animate-none"
+          >
+            Remove Link
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLinkInput(false)}
+            className="px-2.5 py-1 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md font-medium transition-colors cursor-pointer animate-none"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
 export default function RichTextEditor({ content, onChange, placeholder }: RichTextEditorProps) {
-  const extensions = useMemo(() => [
-    StarterKit.configure(),
-    Underline.configure(),
-    Link.configure({
-      openOnClick: false,
-      HTMLAttributes: {
-        class: 'text-app-purple underline font-bold',
-      },
-    }),
-  ], []);
-
   const editor = useEditor({
-    extensions,
+    extensions: staticExtensions,
     content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());

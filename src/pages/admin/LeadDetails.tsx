@@ -522,7 +522,7 @@ export default function LeadDetails() {
                             <div key={idx} className="flex flex-col sm:flex-row gap-5 items-stretch sm:items-center bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
                               <div className="w-24 h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200 relative group/thumb">
                                 <img 
-                                  src={photoUrl || undefined} 
+                                  src={photoUrl || null} 
                                   alt={`Inverter Setup Preference ${idx + 1}`} 
                                   className="w-full h-full object-cover group-hover/thumb:scale-[1.05] transition-transform duration-350"
                                   referrerPolicy="no-referrer"
@@ -701,7 +701,7 @@ export default function LeadDetails() {
                     {photoUrls.map((url, index) => (
                       <div key={index} className="group relative rounded-xl overflow-hidden bg-slate-100 border border-slate-150 aspect-video">
                         <img 
-                          src={url || undefined} 
+                          src={url || null} 
                           alt={`Facility survey location ${index + 1}`} 
                           className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-350"
                           referrerPolicy="no-referrer"

@@ -161,7 +161,7 @@ export default function ProjectDetail() {
             <div className="space-y-8">
               <div className="rounded-[3rem] overflow-hidden shadow-2xl relative aspect-[4/3] sm:aspect-video lg:aspect-[16/10] xl:aspect-[16/9] max-h-[750px] xl:max-h-[850px]">
                 <img 
-                  src={activeImage || project.image_url} 
+                  src={activeImage || project.image_url || null} 
                   alt={project.title} 
                   className="absolute inset-0 w-full h-full object-cover transition-all duration-500" 
                   referrerPolicy="no-referrer"
@@ -174,7 +174,7 @@ export default function ProjectDetail() {
                     onClick={() => setActiveImage(thumb)}
                     className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${activeImage === thumb ? 'border-app-purple scale-95' : 'border-transparent hover:border-black'}`}
                   >
-                    <img src={thumb} alt="Gallery" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={thumb || null} alt="Gallery" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                 ))}
               </div>

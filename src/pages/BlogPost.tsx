@@ -262,7 +262,7 @@ export default function BlogPostPage() {
           <article className="overflow-hidden">
             <div className="rounded-[3rem] overflow-hidden mb-12 shadow-2xl relative aspect-[4/3] sm:aspect-video lg:aspect-[16/10] xl:aspect-[16/9] max-h-[700px] xl:max-h-[800px]">
               <img 
-                src={post.image_url} 
+                src={post.image_url || null} 
                 alt={post.title} 
                 className="absolute inset-0 w-full h-full object-cover"
                 referrerPolicy="no-referrer"
@@ -419,7 +419,7 @@ export default function BlogPostPage() {
                 >
                   <Link to={`/blog/${article.id}`} className="block aspect-[16/10] overflow-hidden relative">
                     <img 
-                      src={article.image_url} 
+                      src={article.image_url || null} 
                       alt={article.title} 
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       referrerPolicy="no-referrer"

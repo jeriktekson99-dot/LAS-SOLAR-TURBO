@@ -156,7 +156,7 @@ export default function AdminBlogPreview() {
           {/* Featured Image */}
           <div className="max-w-4xl mx-auto rounded-[2.5rem] overflow-hidden shadow-md aspect-video max-h-[500px] bg-slate-100 mb-12">
             <img 
-              src={post.image_url || undefined} 
+              src={post.image_url || null} 
               alt={post.title} 
               className="w-full h-full object-cover" 
               referrerPolicy="no-referrer"

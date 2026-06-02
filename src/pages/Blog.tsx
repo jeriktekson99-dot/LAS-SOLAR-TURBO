@@ -136,7 +136,7 @@ export default function Blog() {
                     </div>
                     <div className="lg:col-span-5 relative min-h-[280px] lg:min-h-full overflow-hidden">
                       <img 
-                        src={featuredPost.image_url} 
+                        src={featuredPost.image_url || null} 
                         alt={featuredPost.title} 
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
                         referrerPolicy="no-referrer"
@@ -200,7 +200,7 @@ export default function Blog() {
                         >
                           <div className="aspect-[16/10] overflow-hidden relative">
                             <img 
-                              src={post.image_url} 
+                              src={post.image_url || null} 
                               alt={post.title} 
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                               referrerPolicy="no-referrer" 
