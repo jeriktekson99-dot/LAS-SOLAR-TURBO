@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Loader2 } from 'lucide-react';
+import { X, Upload, Loader2, ChevronDown } from 'lucide-react';
 import { supabase, BlogPost, uploadImage, isSupabaseConfigured } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
 
@@ -148,16 +148,19 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Category</span>
-                  <select 
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-app-purple focus:outline-none transition-all text-sm font-bold"
-                    value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option>Solar Guides</option>
-                    <option>Tech Updates</option>
-                    <option>Case Studies</option>
-                    <option>Company News</option>
-                  </select>
+                  <div className="relative">
+                    <select 
+                      className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 focus:border-app-purple focus:outline-none transition-all text-sm font-bold bg-white appearance-none cursor-pointer"
+                      value={formData.category}
+                      onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    >
+                      <option>Solar Guides</option>
+                      <option>Tech Updates</option>
+                      <option>Case Studies</option>
+                      <option>Company News</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+                  </div>
                 </label>
                 <label className="block">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Read Time</span>

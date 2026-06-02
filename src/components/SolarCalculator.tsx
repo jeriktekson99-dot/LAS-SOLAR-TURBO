@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Zap, TrendingUp, Download, CheckCircle2, X, Loader2, Info } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { supabase, uploadImage, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, uploadImage, isSupabaseConfigured, generateUUID } from '../lib/supabase';
 
 const CALCULATOR_BILL_BRACKETS = [
   '₱1,000 – ₱4,000',
@@ -733,7 +733,7 @@ export default function SolarCalculator() {
               })();
 
               if (finalLeadIdToUpdate) {
-                const { data, error } = await supabase
+                const { error } = await supabase
                   .from('leads')
                   .update({
                     name: leadInfo.name,
@@ -746,19 +746,20 @@ export default function SolarCalculator() {
                     bill_url: combinedBillUrl,
                     status: 'New'
                   })
-                  .eq('id', finalLeadIdToUpdate)
-                  .select();
+                  .eq('id', finalLeadIdToUpdate);
 
                 if (error) {
                   console.error('Database lead update returned query error object:', error);
                   throw error;
                 }
-                returnedLeadId = data && data[0]?.id ? data[0].id : finalLeadIdToUpdate;
+                returnedLeadId = finalLeadIdToUpdate;
               } else {
                 // Fallback: If finalLeadIdToUpdate is null but hasFormContext is true, insert a clean backup lead with the PDF report linked.
-                const { data, error } = await supabase
+                const backupId = generateUUID();
+                const { error } = await supabase
                   .from('leads')
                   .insert({
+                    id: backupId,
                     name: leadInfo.name,
                     email: leadInfo.email,
                     phone: leadInfo.phone,
@@ -767,14 +768,13 @@ export default function SolarCalculator() {
                     goal: 'Detailed Inquiry + Calculator ROI Report',
                     bill_url: docPublicUrl,
                     status: 'New'
-                  })
-                  .select();
+                  });
 
                 if (error) {
                   console.error('Database lead fallback insert returned query error object:', error);
                   throw error;
                 }
-                returnedLeadId = data && data[0]?.id ? data[0].id : null;
+                returnedLeadId = backupId;
               }
             } catch (dbErr) {
               console.error('Database lead update/insert transaction execution failed:', dbErr);

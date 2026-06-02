@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Loader2, Trash2, Plus } from 'lucide-react';
+import { X, Upload, Loader2, Trash2, Plus, ChevronDown } from 'lucide-react';
 import { supabase, Project, uploadImage, isSupabaseConfigured } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
 
@@ -411,16 +411,19 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
               </label>
               <label className="block">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Project Category</span>
-                <select 
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-app-purple focus:outline-none transition-all text-sm font-bold bg-white"
-                  value={formData.category || 'Residential'}
-                  onChange={e => setFormData({ ...formData, category: e.target.value })}
-                  required
-                >
-                  <option value="Residential">Residential</option>
-                  <option value="Commercial">Commercial</option>
-                  <option value="Industrial">Industrial</option>
-                </select>
+                <div className="relative">
+                  <select 
+                    className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 focus:border-app-purple focus:outline-none transition-all text-sm font-bold bg-white appearance-none cursor-pointer"
+                    value={formData.category || 'Residential'}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    required
+                  >
+                    <option value="Residential">Residential</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Industrial">Industrial</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+                </div>
               </label>
             </div>
 

@@ -8,6 +8,7 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Loader2,
   Eye,
   Inbox
@@ -369,29 +370,35 @@ export default function AdminPortfolioManager() {
         <div className="p-8 border-b border-slate-100 bg-slate-50/20 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category System</label>
-            <select
-              value={filterCategory}
-              onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Categories</option>
-              <option value="Residential">Residential Systems</option>
-              <option value="Commercial">Commercial Systems</option>
-              <option value="Industrial">Industrial Systems</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterCategory}
+                onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Categories</option>
+                <option value="Residential">Residential Systems</option>
+                <option value="Commercial">Commercial Systems</option>
+                <option value="Industrial">Industrial Systems</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Installation Region</label>
-            <select
-              value={filterLocation}
-              onChange={(e) => { setFilterLocation(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Locations</option>
-              <option value="Cavite">Cavite Area</option>
-              <option value="Metro Manila">Metro Manila</option>
-              <option value="Other Provinces">Other Provinces</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterLocation}
+                onChange={(e) => { setFilterLocation(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Locations</option>
+                <option value="Cavite">Cavite Area</option>
+                <option value="Metro Manila">Metro Manila</option>
+                <option value="Other Provinces">Other Provinces</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
         </div>
 

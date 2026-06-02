@@ -15,7 +15,8 @@ import {
   Loader2,
   Eye,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { supabase, Lead, isSupabaseConfigured, safeDbQuery, safeDbUpdate } from '../../lib/supabase';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
@@ -477,43 +478,52 @@ export default function AdminLeadsManager() {
         <div className="p-8 border-b border-slate-100 bg-slate-50/20 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category System</label>
-            <select
-              value={filterCategory}
-              onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Categories / Property Types</option>
-              <option value="Residential">Residential inquiries</option>
-              <option value="Commercial">Commercial inquiries</option>
-              <option value="High Value">{"High-Value Users (Bill >= ₱15,000)"}</option>
-              <option value="With Uploads">With Electric Bill Uploads</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterCategory}
+                onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Categories / Property Types</option>
+                <option value="Residential">Residential inquiries</option>
+                <option value="Commercial">Commercial inquiries</option>
+                <option value="High Value">{"High-Value Users (Bill >= ₱15,000)"}</option>
+                <option value="With Uploads">With Electric Bill Uploads</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Lead Status</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Statuses</option>
-              <option value="New">New</option>
-              <option value="Contacted">Contacted</option>
-              <option value="In Progress">In Progress</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Statuses</option>
+                <option value="New">New</option>
+                <option value="Contacted">Contacted</option>
+                <option value="In Progress">In Progress</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Electricity Bill Range</label>
-            <select
-              value={filterBillRange}
-              onChange={(e) => { setFilterBillRange(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Bill Levels</option>
-              <option value="Low">Low (&lt; ₱5,000)</option>
-              <option value="Medium">Medium (₱5,000 - ₱15,000)</option>
-              <option value="High">High (&gt; ₱15,000)</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterBillRange}
+                onChange={(e) => { setFilterBillRange(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Bill Levels</option>
+                <option value="Low">Low (&lt; ₱5,000)</option>
+                <option value="Medium">Medium (₱5,000 - ₱15,000)</option>
+                <option value="High">High (&gt; ₱15,005)</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
         </div>
 

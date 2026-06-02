@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 interface ChangePasswordModalProps {
@@ -70,10 +71,12 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -183,6 +186,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

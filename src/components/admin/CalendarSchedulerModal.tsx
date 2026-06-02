@@ -4,10 +4,12 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
   Plus, 
   Trash2, 
   Calendar as CalendarIcon, 
@@ -316,7 +318,7 @@ export default function CalendarSchedulerModal({ isOpen, onClose, leads, onStatu
   const blanks = Array(firstDay).fill(null);
   const calendarCells = [...blanks, ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-[2.5rem] border border-slate-200 w-full max-w-6xl shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden animate-scale-up">
         
@@ -435,20 +437,23 @@ export default function CalendarSchedulerModal({ isOpen, onClose, leads, onStatu
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-black uppercase text-slate-400">Appointment Type</label>
-                    <select
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:border-black focus:outline-none"
-                      value={formType}
-                      onChange={(e) => setFormType(e.target.value as CustomMeeting['type'])}
-                    >
-                      <option value="Ocular Visit">Ocular Visit / Site Audit</option>
-                      <option value="Client Meeting">Client Consultation</option>
-                      <option value="Technical Assessment">Technical Survey</option>
-                      <option value="Project Presentation">Proposal Review</option>
-                      <option value="Other">Other / Regulatory Filing</option>
-                    </select>
-                  </div>
+                   <div className="space-y-1">
+                     <label className="block text-[10px] font-black uppercase text-slate-400">Appointment Type</label>
+                     <div className="relative">
+                       <select
+                         className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:border-black focus:outline-none appearance-none cursor-pointer"
+                         value={formType}
+                         onChange={(e) => setFormType(e.target.value as CustomMeeting['type'])}
+                       >
+                         <option value="Ocular Visit">Ocular Visit / Site Audit</option>
+                         <option value="Client Meeting">Client Consultation</option>
+                         <option value="Technical Assessment">Technical Survey</option>
+                         <option value="Project Presentation">Proposal Review</option>
+                         <option value="Other">Other / Regulatory Filing</option>
+                       </select>
+                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+                     </div>
+                   </div>
 
                   <div className="space-y-1">
                     <label className="block text-[10px] font-black uppercase text-slate-400">Scheduled Date</label>
@@ -762,7 +767,7 @@ export default function CalendarSchedulerModal({ isOpen, onClose, leads, onStatu
                 </div>
 
                 {selectedDate && (
-                  <div className="p-4 bg-app-purple/5 border border-app-purple/10 rounded-2xl flex items-start gap-2.5 text-app-purple text-[10px] leading-relaxed">
+                  <div className="p-4 bg-app-purple/5 border border-app-purple/10 rounded-2xl flex items-start gap-2.5 text-app-purple text-[10px] leading-relaxed mt-6 shrink-0 shadow-xs">
                     <AlertCircle size={14} className="shrink-0 mt-0.5" />
                     <span>
                       Admins are advised to notify client partners 24 hours in advance regarding postponed or rescheduled project visits.
@@ -878,6 +883,7 @@ export default function CalendarSchedulerModal({ isOpen, onClose, leads, onStatu
         </footer>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

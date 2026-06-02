@@ -264,7 +264,7 @@ export default function AdminDashboardLayout() {
   const totalResultsCount = searchedLeads.length + searchedProjects.length + searchedBlogs.length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans">
+    <div className="h-screen w-full overflow-hidden bg-slate-50 flex font-sans">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -280,7 +280,7 @@ export default function AdminDashboardLayout() {
 
       {/* Sidebar */}
       <aside 
-        className={`fixed lg:static inset-y-0 left-0 w-80 bg-white border-r border-slate-200 z-50 overflow-y-auto transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`fixed lg:static lg:h-screen inset-y-0 left-0 w-80 bg-white border-r border-slate-200 z-50 overflow-y-auto no-scrollbar transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         <div className="min-h-full flex flex-col p-8">
           {/* Logo / Brand Header */}
@@ -609,7 +609,7 @@ export default function AdminDashboardLayout() {
         </header>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-8 pb-32 bg-slate-50">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

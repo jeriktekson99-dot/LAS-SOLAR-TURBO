@@ -11,6 +11,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Mail,
   Users
 } from 'lucide-react';
@@ -501,7 +502,7 @@ export default function AdminArchiveManager() {
                   setCurrentPage(1);
                   setSelectedItems([]); // Clear selection when filter changes
                 }}
-                className="w-full pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 focus:border-black focus:outline-none transition-all shadow-sm cursor-pointer appearance-none"
+                className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 focus:border-black focus:outline-none transition-all shadow-sm cursor-pointer appearance-none"
               >
                 <option value="All">All Sources</option>
                 <option value="Portfolio">Portfolio (Projects)</option>
@@ -509,6 +510,7 @@ export default function AdminArchiveManager() {
                 <option value="Inquiry">Inquiries (Leads)</option>
                 <option value="Subscriber">Subscribers</option>
               </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
             </div>
             <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm w-full sm:w-auto justify-between">
               <button 

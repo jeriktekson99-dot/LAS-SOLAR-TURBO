@@ -11,7 +11,8 @@ import {
   Loader2,
   Inbox,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { supabase, Lead, isSupabaseConfigured, safeDbQuery } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -543,28 +544,34 @@ export default function AdminOverview() {
           {/* Calendar Scope Pickers */}
           <div className="flex items-center gap-2">
             {timeframe === '30days' && (
-              <select
-                id="select-analytics-month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="bg-white px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-black cursor-pointer shadow-sm transition-all"
-              >
-                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, idx) => (
-                  <option key={idx} value={idx}>{m}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  id="select-analytics-month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="bg-white pl-3 pr-8 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-black cursor-pointer shadow-sm transition-all appearance-none"
+                >
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, idx) => (
+                    <option key={idx} value={idx}>{m}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-3 h-3" />
+              </div>
             )}
             
-            <select
-              id="select-analytics-year"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="bg-white px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-black cursor-pointer shadow-sm transition-all"
-            >
-              {Array.from({ length: new Date().getFullYear() - 2024 + 1 }, (_, i) => 2024 + i).map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                id="select-analytics-year"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="bg-white pl-3 pr-8 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-black cursor-pointer shadow-sm transition-all appearance-none"
+              >
+                {Array.from({ length: new Date().getFullYear() - 2024 + 1 }, (_, i) => 2024 + i).map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-3 h-3" />
+            </div>
           </div>
 
           <div className="bg-white p-2 rounded-2xl border border-slate-100 flex items-center justify-between sm:justify-start gap-2 shadow-sm">

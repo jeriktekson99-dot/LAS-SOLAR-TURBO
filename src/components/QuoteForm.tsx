@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronLeft, CheckCircle2, Upload, Send, Loader2, Info, Zap } from 'lucide-react';
-import { supabase, isSupabaseConfigured, uploadImage } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, uploadImage, generateUUID } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -980,21 +980,26 @@ export default function QuoteForm({ className = "" }: QuoteFormProps) {
         status: 'New'
       };
 
+      // Assign or pre-generate lead ID to avoid RLS INSERT/UPDATE error when doing .select() (which checks SELECT policies on the returned row)
+      const finalId = resolvedLeadId || generateUUID();
+      const payloadWithId = {
+        id: finalId,
+        ...leadPayload
+      };
+
       const queryResult = resolvedLeadId
         ? await supabase
             .from('leads')
             .update(leadPayload)
             .eq('id', resolvedLeadId)
-            .select()
         : await supabase
             .from('leads')
-            .insert(leadPayload)
-            .select();
+            .insert(payloadWithId);
 
-      const { data, error } = queryResult;
+      const { error } = queryResult;
       if (error) throw error;
 
-      let dbLeadIdResolved = data && data[0]?.id ? data[0].id : resolvedLeadId;
+      let dbLeadIdResolved = finalId;
 
       // Always clear the contexts right now so that any future submissions will start fresh instead of overwriting or pre-filling outdated data.
       localStorage.removeItem('las_solar_calculator_context');

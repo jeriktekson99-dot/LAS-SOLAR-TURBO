@@ -257,4 +257,22 @@ export async function safeDbBulkDelete(
   }
 }
 
+/**
+ * Generates an RFC-compliant v4 UUID on the client side.
+ * This is used so we can assign an ID to new lead records before inserting them,
+ * allowing us to avoid utilizing `.select()` to retrieve the inserted record,
+ * which triggers PostgreSQL Row-Level Security SELECT policy restrictions.
+ */
+export function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+
 

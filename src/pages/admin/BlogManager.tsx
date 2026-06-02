@@ -8,6 +8,7 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Eye,
   MessageSquare,
   Loader2,
@@ -344,41 +345,50 @@ export default function AdminBlogManager() {
         <div className="p-8 border-b border-slate-100 bg-slate-50/20 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category System</label>
-            <select
-              value={filterCategory}
-              onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Categories</option>
-              <option value="Educational">Educational Articles</option>
-              <option value="Guides">Guides & Tutorials</option>
-              <option value="News">Industry News / Updates</option>
-              <option value="Tech">Tech & Solar Insights</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterCategory}
+                onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Categories</option>
+                <option value="Educational">Educational Articles</option>
+                <option value="Guides">Guides & Tutorials</option>
+                <option value="News">Industry News / Updates</option>
+                <option value="Tech">Tech & Solar Insights</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Engagement Level</label>
-            <select
-              value={filterViews}
-              onChange={(e) => { setFilterViews(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Views</option>
-              <option value="High">{"Popular (>= 100 views)"}</option>
-              <option value="Low">{"Low views (< 100 views)"}</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterViews}
+                onChange={(e) => { setFilterViews(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Views</option>
+                <option value="High">{"Popular (>= 100 views)"}</option>
+                <option value="Low">{"Low views (< 100 views)"}</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Read Duration</label>
-            <select
-              value={filterReadTime}
-              onChange={(e) => { setFilterReadTime(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm"
-            >
-              <option value="All">All Read Times</option>
-              <option value="Short">{"Quick Read (< 5 mins)"}</option>
-              <option value="Long">{"Deep Read (>= 5 mins)"}</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterReadTime}
+                onChange={(e) => { setFilterReadTime(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-3 text-xs font-bold text-slate-700 focus:border-black focus:outline-none focus:ring-0 transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="All">All Read Times</option>
+                <option value="Short">{"Quick Read (< 5 mins)"}</option>
+                <option value="Long">{"Deep Read (>= 5 mins)"}</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
+            </div>
           </div>
         </div>
 

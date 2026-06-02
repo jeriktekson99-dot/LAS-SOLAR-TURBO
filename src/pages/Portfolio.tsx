@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import PageHero from '../components/common/PageHero';
-import { ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Search } from 'lucide-react';
 import CTASection from '../components/common/CTASection';
 import { supabase, Project, isSupabaseConfigured, safeDbQuery } from '../lib/supabase';
 
@@ -143,16 +143,17 @@ export default function Portfolio() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
             </div>
             <div className="flex gap-4 w-full md:w-auto">
-              <div className="w-full md:w-64">
+              <div className="w-full md:w-64 relative">
                 <select 
                   value={selectedCategory}
                   onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
-                  className="w-full bg-white border border-slate-200 text-black py-3 px-6 rounded-xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none appearance-none cursor-pointer font-bold uppercase tracking-widest text-[10px]"
+                  className="w-full bg-white border border-slate-200 text-black py-3 pl-6 pr-10 rounded-xl focus:ring-2 focus:ring-app-purple focus:border-transparent outline-none appearance-none cursor-pointer font-bold uppercase tracking-widest text-[10px]"
                 >
                   {['All', 'Residential', 'Commercial', 'Industrial'].map(cat => (
                     <option key={cat} value={cat}>{cat === 'All' ? 'All Systems' : `${cat} Systems`}</option>
                   ))}
                 </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
               </div>
             </div>
           </div>
