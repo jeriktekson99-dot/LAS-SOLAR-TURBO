@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -146,18 +146,18 @@ const MenuBar = ({ editor }: { editor: any }) => {
   );
 };
 
-const extensions = [
-  StarterKit.configure(),
-  Underline.configure(),
-  Link.configure({
-    openOnClick: false,
-    HTMLAttributes: {
-      class: 'text-app-purple underline font-bold',
-    },
-  }),
-];
-
 export default function RichTextEditor({ content, onChange, placeholder }: RichTextEditorProps) {
+  const extensions = useMemo(() => [
+    StarterKit.configure(),
+    Underline.configure(),
+    Link.configure({
+      openOnClick: false,
+      HTMLAttributes: {
+        class: 'text-app-purple underline font-bold',
+      },
+    }),
+  ], []);
+
   const editor = useEditor({
     extensions,
     content,
@@ -168,6 +168,32 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
       attributes: {
         class: 'prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none',
       },
+      transformPastedText(text) {
+        // Clean up carriage returns, and collapse multiple blank lines into a single newline to prevent skipped lines
+        return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n\n+/g, '\n');
+      },
+      transformPastedHTML(html) {
+        // Filter out empty paragraph components or empty inline wraps to make spacing clean on paste
+        const cleanHtml = html
+          .replace(/<p>\s*<\/p>/gi, '')
+          .replace(/<p><br\s*\/?>\s*<\/p>/gi, '')
+          .replace(/<p>&nbsp;<\/p>/gi, '');
+
+        // If the HTML consists of a single wrapped paragraph, unwrap it.
+        // This prevents ProseMirror from splitting the destination paragraph block and skipping lines
+        // when pasting shorter inline text segments copied within this same editor.
+        const bodyContent = cleanHtml.replace(/<meta[^>]*>/gi, '').trim();
+        const pMatch = bodyContent.match(/^<p[^>]*>([\s\S]*)<\/p>$/i);
+        if (pMatch) {
+          const innerContent = pMatch[1];
+          // Check if there are any other block level tags inside
+          const hasBlockTags = /<(p|h1|h2|h3|h4|h5|h6|ul|ol|li|blockquote|hr)\b[^>]*>/i.test(innerContent);
+          if (!hasBlockTags) {
+            return innerContent;
+          }
+        }
+        return cleanHtml;
+      }
     },
   });
 

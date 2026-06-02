@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Loader2, ChevronDown } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { supabase, BlogPost, uploadImage, isSupabaseConfigured } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
 
@@ -21,7 +22,7 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
     }
     return {
       title: '',
-      author_name: 'Mark Dizon',
+      author_name: 'Engr. L. A. Santos',
       category: 'Solar Guides',
       content: '',
       image_url: '',
@@ -30,19 +31,21 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
   });
 
   useEffect(() => {
-    if (post && post.id !== formData.id) {
-      setFormData(post);
-    } else if (!post && formData.id) {
-      setFormData({
-        title: '',
-        author_name: 'Mark Dizon',
-        category: 'Solar Guides',
-        content: '',
-        image_url: '',
-        read_time: '5 min read',
-      });
+    if (isOpen) {
+      if (post) {
+        setFormData(post);
+      } else {
+        setFormData({
+          title: '',
+          author_name: 'Engr. L. A. Santos',
+          category: 'Solar Guides',
+          content: '',
+          image_url: '',
+          read_time: '5 min read',
+        });
+      }
     }
-  }, [post]);
+  }, [isOpen, post]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -113,9 +116,10 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
   };
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-[2.5rem] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-scale-in">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
@@ -175,17 +179,8 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
               </div>
             </div>
 
-            <div className="space-y-4">
-              <label className="block">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Author Name</span>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-app-purple focus:outline-none transition-all text-sm font-bold"
-                  value={formData.author_name}
-                  onChange={e => setFormData({ ...formData, author_name: e.target.value })}
-                />
-              </label>
-              <label className="block">
+            <div className="space-y-4 flex flex-col justify-between">
+              <label className="block w-full">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Thumbnail Image</span>
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
@@ -213,18 +208,19 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
                   </button>
                 </div>
               </label>
+              
             </div>
           </div>
 
           <div className="space-y-4">
-            <label className="block">
+            <div className="block">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Article Content (Rich Text Editor)</span>
               <RichTextEditor 
                 content={formData.content || ''} 
                 onChange={(html) => setFormData({ ...formData, content: html })}
                 placeholder="Write your article here..."
               />
-            </label>
+            </div>
           </div>
         </form>
 
@@ -246,6 +242,7 @@ export default function BlogModal({ isOpen, onClose, onSave, post }: BlogModalPr
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

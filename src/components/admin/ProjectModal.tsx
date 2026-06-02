@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Loader2, Trash2, Plus, ChevronDown } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { supabase, Project, uploadImage, isSupabaseConfigured } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
 
@@ -62,51 +63,53 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
   });
 
   useEffect(() => {
-    if (project && project.id !== formData.id) {
-      const existingMembers = project.personnel?.members;
-      let initialMembers: { name: string; title: string }[] = [];
-      if (Array.isArray(existingMembers)) {
-        initialMembers = [...existingMembers];
+    if (isOpen) {
+      if (project) {
+        const existingMembers = project.personnel?.members;
+        let initialMembers: { name: string; title: string }[] = [];
+        if (Array.isArray(existingMembers)) {
+          initialMembers = [...existingMembers];
+        } else {
+          if (project.personnel?.engineer?.name) {
+            initialMembers.push({ name: project.personnel.engineer.name, title: project.personnel.engineer.title || 'Systems Engineer' });
+          }
+          if (project.personnel?.installer?.name) {
+            initialMembers.push({ name: project.personnel.installer.name, title: project.personnel.installer.title || 'Master Installer' });
+          }
+        }
+        if (initialMembers.length === 0) {
+          initialMembers = [{ name: '', title: '' }];
+        }
+        setFormData({
+          ...project,
+          category: project.category || 'Residential',
+          personnel: {
+            ...project.personnel,
+            members: initialMembers
+          }
+        });
       } else {
-        if (project.personnel?.engineer?.name) {
-          initialMembers.push({ name: project.personnel.engineer.name, title: project.personnel.engineer.title || 'Systems Engineer' });
-        }
-        if (project.personnel?.installer?.name) {
-          initialMembers.push({ name: project.personnel.installer.name, title: project.personnel.installer.title || 'Master Installer' });
-        }
+        setFormData({
+          title: '',
+          client_name: '',
+          location: '',
+          system_size: '',
+          panel_specs: '',
+          inverter_type: '',
+          estimated_savings: '',
+          image_url: '',
+          thumbnails: [],
+          overview_content: '',
+          technical_content: '',
+          status: 'Completed',
+          category: 'Residential',
+          personnel: {
+            members: [{ name: '', title: '' }]
+          }
+        });
       }
-      if (initialMembers.length === 0) {
-        initialMembers = [{ name: '', title: '' }];
-      }
-      setFormData({
-        ...project,
-        category: project.category || 'Residential',
-        personnel: {
-          ...project.personnel,
-          members: initialMembers
-        }
-      });
-    } else if (!project && formData.id) {
-      setFormData({
-        title: '',
-        client_name: '',
-        location: '',
-        system_size: '',
-        panel_specs: '',
-        inverter_type: '',
-        estimated_savings: '',
-        image_url: '',
-        thumbnails: [],
-        overview_content: '',
-        technical_content: '',
-        status: 'Completed',
-        category: 'Residential',
-        personnel: {
-          members: [{ name: '', title: '' }]
-        }
-      });
     }
-  }, [project]);
+  }, [isOpen, project]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -288,9 +291,10 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
   };
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-scale-in">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
@@ -549,25 +553,25 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
           </div>
 
           <div className="space-y-4">
-            <label className="block">
+            <div className="block">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Project Overview (Rich Text)</span>
               <RichTextEditor 
                 content={formData.overview_content || ''} 
                 onChange={(html) => setFormData({ ...formData, overview_content: html })}
                 placeholder="Describe the project scope, challenges, and results..."
               />
-            </label>
+            </div>
           </div>
  
           <div className="space-y-4">
-            <label className="block">
+            <div className="block">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Technical Details (Rich Text)</span>
               <RichTextEditor 
                 content={formData.technical_content || ''} 
                 onChange={(html) => setFormData({ ...formData, technical_content: html })}
                 placeholder="List technical specs, equipment used, wiring config..."
               />
-            </label>
+            </div>
           </div>
         </form>
 
@@ -589,6 +593,7 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
