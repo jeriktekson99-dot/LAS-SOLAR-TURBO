@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
               </h2>
             </div>
             <p className="text-slate-700 leading-relaxed font-light text-base md:text-lg">
-              All brand names, logos, custom graphics, and service marks displayed on this platform are the exclusive property of Las Turbo Solar or our authorized partners. Unauthorized replication, modification, or distribution of these assets for any commercial or public intent is strictly prohibited without obtaining our explicit, written approval in advance. For intellectual property inquiries, you may reach out to <a href="mailto:legal@lasturbosolar.com" className="text-app-purple hover:underline font-medium">legal@lasturbosolar.com</a>.
+              All brand names, logos, custom graphics, and service marks displayed on this platform are the exclusive property of Las Turbo Solar or our authorized partners. Unauthorized replication, modification, or distribution of these assets for any commercial or public intent is strictly prohibited without obtaining our explicit, written approval in advance. For intellectual property inquiries, you may reach out to <a href="mailto:lyndon_santos@ymail.com" className="text-app-purple hover:underline font-medium">lyndon_santos@ymail.com</a>.
             </p>
           </section>
 

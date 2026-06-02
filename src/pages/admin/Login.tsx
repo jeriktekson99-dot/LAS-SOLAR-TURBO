@@ -10,11 +10,15 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isForgotMode, setIsForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setError('⚡ Running in local offline demo mode. You can sign in using any email and password.');
+      setError('Running in local offline demo mode. You can sign in using any email and password.');
       return;
     }
     
@@ -59,6 +63,36 @@ export default function AdminLogin() {
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setError('');
+    setForgotSuccess('');
+
+    if (!isSupabaseConfigured) {
+      setTimeout(() => {
+        setForgotSuccess('Demo Mode: A simulated password reset link has been sent to your email.');
+        setForgotLoading(false);
+      }, 800);
+      return;
+    }
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/admin/reset-password`,
+      });
+
+      if (resetError) throw resetError;
+
+      setForgotSuccess('Password reset link has been sent! Please check your email inbox.');
+    } catch (err: any) {
+      console.error('Password reset error:', err);
+      setError(err.message || 'Error sending password reset email. Please try again.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -111,63 +145,132 @@ export default function AdminLogin() {
           </div>
 
           <div className="py-2">
-            <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
-                <div className="bg-red-50 text-red-500 text-[10px] font-bold py-2.5 px-4 rounded-xl border border-red-100 flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                  {error}
-                </div>
-              )}
+            {!isForgotMode ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                {error && (
+                  <div className="bg-red-50 text-red-500 text-[10px] font-bold py-2.5 px-4 rounded-xl border border-red-100 flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                    {error}
+                  </div>
+                )}
 
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Identity</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Address"
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black/5 focus:outline-none transition-all placeholder:text-slate-300"
-                    required
-                    disabled={loading}
-                  />
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Identity</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Email Address"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black/5 focus:outline-none transition-all placeholder:text-slate-300"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Secret Key</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black/5 focus:outline-none transition-all placeholder:text-slate-300"
-                    required
-                    disabled={loading}
-                  />
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Secret Key</label>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black/5 focus:outline-none transition-all placeholder:text-slate-300"
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-black transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  <div className="text-right px-1 pt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotMode(true);
+                        setError('');
+                        setForgotSuccess('');
+                      }}
+                      className="text-[9px] font-black uppercase tracking-widest text-app-purple hover:underline cursor-pointer"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-black text-white py-4 rounded-xl font-display font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-black/10 mt-6 group flex items-center justify-center gap-3 disabled:opacity-70"
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : 'Secure Sign In'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                {error && (
+                  <div className="bg-red-50 text-red-500 text-[10px] font-bold py-2.5 px-4 rounded-xl border border-red-100 flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                {forgotSuccess && (
+                  <div className="bg-green-50 text-green-700 text-[10px] font-bold py-2.5 px-4 rounded-xl border border-green-100 flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                    {forgotSuccess}
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Identity Verification</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="Account Email Address"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black/5 focus:outline-none transition-all placeholder:text-slate-300"
+                      required
+                      disabled={forgotLoading || !!forgotSuccess}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-black text-white py-4 rounded-xl font-display font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-black/10 mt-6 group flex items-center justify-center gap-3 disabled:opacity-70"
+                  disabled={forgotLoading || !!forgotSuccess}
+                >
+                  {forgotLoading ? <Loader2 className="animate-spin" size={18} /> : 'Send Reset Link'}
+                </button>
+
+                <div className="text-center pt-4">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-black transition-colors"
+                    onClick={() => {
+                      setIsForgotMode(false);
+                      setError('');
+                      setForgotSuccess('');
+                    }}
+                    className="text-[10px] font-black uppercase tracking-widest text-[#7E22CE] hover:underline"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    Back to Sign In
                   </button>
                 </div>
-              </div>
-
-              {/* Recovery link container removed */}
-
-              <button
-                type="submit"
-                className="w-full bg-black text-white py-4 rounded-xl font-display font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-black/10 mt-6 group flex items-center justify-center gap-3 disabled:opacity-70"
-                disabled={loading}
-              >
-                {loading ? <Loader2 className="animate-spin" size={18} /> : 'Secure Sign In'}
-              </button>
-            </form>
+              </form>
+            )}
           </div>
         </motion.div>
       </div>

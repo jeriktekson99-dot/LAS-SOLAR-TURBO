@@ -19,6 +19,7 @@ import TermsOfService from './pages/TermsOfService';
 
 // Admin Pages
 import AdminLogin from './pages/admin/Login';
+import ResetPassword from './pages/admin/ResetPassword';
 import AdminDashboardLayout from './pages/admin/DashboardLayout';
 import AdminOverview from './pages/admin/Overview';
 import AdminPortfolioManager from './pages/admin/PortfolioManager';
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
   {
     path: '/admin/login',
     element: <AdminLogin />,
+  },
+  {
+    path: '/admin/reset-password',
+    element: <ResetPassword />,
   },
   {
     path: '/admin/dashboard',

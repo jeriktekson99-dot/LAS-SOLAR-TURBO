@@ -14,12 +14,14 @@ import {
   Menu,
   X,
   User,
-  Calendar
+  Calendar,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase, isSupabaseConfigured, safeDbQuery } from '../../lib/supabase';
 import logoImage from '../../assets/images/regenerated_image_1779165557603.png';
 import CalendarSchedulerModal from '../../components/admin/CalendarSchedulerModal';
+import ChangePasswordModal from '../../components/admin/ChangePasswordModal';
 
 const navItems = [
   { icon: BarChart3, label: 'Overview', path: '/admin/dashboard/overview' },
@@ -38,6 +40,7 @@ export default function AdminDashboardLayout() {
     return true;
   });
   const [user, setUser] = useState<any>(null);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const navigate = useNavigate();
 
   // Search state
@@ -334,7 +337,14 @@ export default function AdminDashboardLayout() {
           </nav>
 
           {/* Bottom Actions */}
-          <div className="pt-8 border-t border-slate-100">
+          <div className="pt-8 border-t border-slate-100 space-y-2">
+            <button 
+              onClick={() => setIsChangePasswordOpen(true)}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl text-slate-500 hover:bg-slate-50 hover:text-black transition-all group cursor-pointer"
+            >
+              <Lock size={20} />
+              <span className="text-sm font-bold uppercase tracking-widest leading-none">Change Password</span>
+            </button>
             <button 
               onClick={handleLogout}
               className="w-full flex items-center gap-4 p-4 rounded-2xl text-red-500 hover:bg-red-50 transition-all group"
@@ -612,6 +622,12 @@ export default function AdminDashboardLayout() {
         onClose={() => setIsCalendarOpen(false)}
         leads={leads}
         onStatusUpdated={fetchLeads}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
       />
     </div>
   );
