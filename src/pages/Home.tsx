@@ -275,7 +275,7 @@ export default function Home() {
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mt-1">Average Bill Reduction</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-display font-black text-white leading-tight">50+</p>
+                    <p className="text-2xl font-display font-black text-white leading-tight">100+</p>
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mt-1">Tier-1 Panels Installed</p>
                   </div>
                   <div>
